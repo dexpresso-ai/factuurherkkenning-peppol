@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark-first executive SaaS theme */
+    --background: 230 36% 5%;
+    --foreground: 220 32% 96%;
+
+    --card: 226 30% 8%;
+    --card-foreground: 220 32% 96%;
+
+    --popover: 226 30% 8%;
+    --popover-foreground: 220 32% 96%;
+
+    --primary: 190 100% 55%;
+    --primary-foreground: 226 42% 7%;
+
+    --secondary: 226 22% 13%;
+    --secondary-foreground: 220 24% 92%;
+
+    --muted: 226 20% 14%;
+    --muted-foreground: 222 14% 66%;
+
+    --accent: 252 88% 66%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 86% 64%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 151 84% 48%;
+    --success-foreground: 160 44% 8%;
+
+    --warning: 38 96% 58%;
+    --warning-foreground: 35 86% 10%;
+
+    --info: 199 96% 58%;
+    --info-foreground: 220 42% 8%;
+
+    --border: 223 20% 18%;
+    --input: 223 20% 18%;
+    --ring: 190 100% 55%;
+
+    --radius: 1.05rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-width: 320px;
+    font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: geometricPrecision;
+    background:
+      radial-gradient(circle at 15% 0%, hsl(190 100% 55% / 0.16), transparent 32rem),
+      radial-gradient(circle at 85% 15%, hsl(252 88% 66% / 0.18), transparent 34rem),
+      radial-gradient(circle at 55% 100%, hsl(151 84% 48% / 0.08), transparent 28rem),
+      hsl(var(--background));
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -2;
+    background-image:
+      linear-gradient(hsl(0 0% 100% / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.035) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: linear-gradient(to bottom, black, transparent 85%);
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.28);
+    color: hsl(var(--foreground));
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.6), hsl(var(--accent) / 0.6));
+    border-radius: 999px;
+    border: 3px solid hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply border border-white/10 bg-card/70 shadow-card backdrop-blur-2xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-white via-primary to-accent bg-clip-text text-transparent;
+  }
+
+  .soft-grid {
+    background-image:
+      linear-gradient(hsl(0 0% 100% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+}
+
+@layer utilities {
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.12),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+
+  .page-enter {
+    animation: fade-up 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .motion-safe-pop {
+    animation: scale-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
