@@ -53,13 +53,13 @@ export function LoginPage() {
           <div className="max-w-2xl animate-fade-up">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
               <Sparkles className="h-3 w-3" />
-              Dark pilot experience
+              Enterprise invoice workflow
             </div>
             <h1 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
-              Facturen verwerken met een interface die voelt als controlekamer.
+              Professionele factuurverwerking met volledige controle over elke stap.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-white/68">
-              Van mailbox naar extractie, validatie, UBL en Peppol-status. Eén rustige dark cockpit voor finance teams die snelheid én grip willen.
+              Van mailboxverwerking en automatische gegevensherkenning tot validatie, UBL-generatie en Peppol-status. Eén veilige workflow voor finance teams die snelheid, grip en betrouwbaarheid willen combineren.
             </p>
 
             <div className="mt-9 grid max-w-2xl gap-4 xl:grid-cols-3">
