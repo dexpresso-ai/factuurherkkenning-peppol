@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { InvoiceStatusBadge, PeppolStatusBadge } from '@/components/StatusBadge';
 import { ConfidenceIndicator } from './ConfidenceIndicator';
 import { formatDate, formatMoney } from '@/utils/formatters';
+import { getInvoiceSummaryDescription } from '@/utils/invoiceRecognition';
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -43,6 +44,7 @@ export function InvoiceTable({ invoices, isLoading }: InvoiceTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Leverancier</TableHead>
+            <TableHead>Omschrijving</TableHead>
             <TableHead>Factuurnr.</TableHead>
             <TableHead>Datum</TableHead>
             <TableHead className="text-right">Bedrag</TableHead>
@@ -66,6 +68,11 @@ export function InvoiceTable({ invoices, isLoading }: InvoiceTableProps) {
                     KVK {inv.supplierKvk}
                   </div>
                 )}
+              </TableCell>
+              <TableCell className="max-w-[220px]">
+                <div className="line-clamp-2 text-sm text-foreground">
+                  {getInvoiceSummaryDescription(inv)}
+                </div>
               </TableCell>
               <TableCell>
                 <span className="rounded-lg border border-white/10 bg-white/[0.035] px-2 py-1 font-mono text-xs text-foreground/90">
@@ -112,8 +119,9 @@ function InvoiceTableSkeleton() {
       </div>
       <div className="divide-y divide-white/10">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="grid grid-cols-7 items-center gap-4 px-4 py-4">
+          <div key={i} className="grid grid-cols-8 items-center gap-4 px-4 py-4">
             <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-36" />
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-4 w-16 justify-self-end" />

@@ -12,6 +12,7 @@ import { ValidationBlock } from '@/features/invoices/ValidationBlock';
 import { AuditTimeline } from '@/features/audit/AuditTimeline';
 import { useInvoice } from '@/hooks/useInvoices';
 import { useInvoiceAudit } from '@/hooks/useFeatures';
+import { getInvoiceSummaryDescription } from '@/utils/invoiceRecognition';
 
 export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -74,6 +75,9 @@ export function InvoiceDetailPage() {
               {invoice.supplierName}
             </span>
           </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {getInvoiceSummaryDescription(invoice)}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <InvoiceStatusBadge status={invoice.status} />
@@ -113,7 +117,7 @@ export function InvoiceDetailPage() {
               value="fields"
               className="m-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
             >
-              <ExtractionFields invoice={invoice} />
+              <ExtractionFields key={`${invoice.id}-${invoice.updatedAt}`} invoice={invoice} />
             </TabsContent>
 
             <TabsContent

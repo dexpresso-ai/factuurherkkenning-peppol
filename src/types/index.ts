@@ -1,5 +1,6 @@
 export * from './common';
 export * from './invoice';
+export * from './invoiceApi';
 export * from './supplier';
 export * from './mailbox';
 export * from './audit';

@@ -27,6 +27,7 @@ import {
 import { ConfidenceIndicator } from '@/features/invoices/ConfidenceIndicator';
 import { useInvoices } from '@/hooks/useInvoices';
 import { formatDate, formatMoney } from '@/utils/formatters';
+import { getInvoiceSummaryDescription } from '@/utils/invoiceRecognition';
 
 interface ExceptionGroup {
   key: string;
@@ -194,6 +195,9 @@ function ExceptionTable({ rows }: { rows: ExceptionRow[] }) {
                 <TableCell>
                   <div className="font-semibold text-foreground">
                     {invoice.supplierName}
+                  </div>
+                  <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                    {getInvoiceSummaryDescription(invoice)}
                   </div>
                   {invoice.supplierKvk ? (
                     <div className="mt-0.5 text-xs text-muted-foreground">

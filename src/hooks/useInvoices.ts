@@ -7,6 +7,7 @@ import {
 import type {
   Invoice,
   InvoiceListFilters,
+  InvoiceRecognitionResultApiDto,
   PagedResult,
   SendPeppolResult,
   UpdateInvoiceDto,
@@ -29,6 +30,32 @@ export function useInvoice(id: string | undefined) {
   });
 }
 
+
+export function useInvoiceRecognition(id: string | undefined) {
+  return useQuery<InvoiceRecognitionResultApiDto>({
+    queryKey: queryKeys.invoices.recognition(id ?? ''),
+    queryFn: () => invoiceService.getRecognition(id!),
+    enabled: Boolean(id),
+  });
+}
+
+export function useUpdateInvoiceRecognition(
+  id: string,
+  options?: UseMutationOptions<InvoiceRecognitionResultApiDto, Error, UpdateInvoiceDto>,
+) {
+  const qc = useQueryClient();
+  return useMutation<InvoiceRecognitionResultApiDto, Error, UpdateInvoiceDto>({
+    ...options,
+    mutationFn: (dto) => invoiceService.updateRecognition(id, dto),
+    onSuccess: (data, variables, context, mutation) => {
+      qc.setQueryData(queryKeys.invoices.recognition(id), data);
+      qc.invalidateQueries({ queryKey: queryKeys.invoices.detail(id) });
+      qc.invalidateQueries({ queryKey: queryKeys.invoices.all });
+      options?.onSuccess?.(data, variables, context, mutation);
+    },
+  });
+}
+
 export function useUpdateInvoice(
   id: string,
   options?: UseMutationOptions<Invoice, Error, UpdateInvoiceDto>,
@@ -39,6 +66,7 @@ export function useUpdateInvoice(
     mutationFn: (dto) => invoiceService.update(id, dto),
     onSuccess: (data, variables, context, mutation) => {
       qc.setQueryData(queryKeys.invoices.detail(id), data);
+      qc.invalidateQueries({ queryKey: queryKeys.invoices.recognition(id) });
       qc.invalidateQueries({ queryKey: queryKeys.invoices.all });
       options?.onSuccess?.(data, variables, context, mutation);
     },
@@ -51,6 +79,7 @@ export function useReprocessInvoice(id: string) {
     mutationFn: () => invoiceService.reprocess(id),
     onSuccess: (data) => {
       qc.setQueryData(queryKeys.invoices.detail(id), data);
+      qc.invalidateQueries({ queryKey: queryKeys.invoices.recognition(id) });
       qc.invalidateQueries({ queryKey: queryKeys.invoices.all });
       qc.invalidateQueries({ queryKey: queryKeys.dashboard });
     },
@@ -63,6 +92,7 @@ export function useApproveInvoice(id: string) {
     mutationFn: () => invoiceService.approve(id),
     onSuccess: (data) => {
       qc.setQueryData(queryKeys.invoices.detail(id), data);
+      qc.invalidateQueries({ queryKey: queryKeys.invoices.recognition(id) });
       qc.invalidateQueries({ queryKey: queryKeys.invoices.all });
       qc.invalidateQueries({ queryKey: queryKeys.dashboard });
     },
@@ -75,6 +105,7 @@ export function useSendToPeppol(id: string) {
     mutationFn: () => invoiceService.sendToPeppol(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.invoices.detail(id) });
+      qc.invalidateQueries({ queryKey: queryKeys.invoices.recognition(id) });
       qc.invalidateQueries({ queryKey: queryKeys.invoices.all });
       qc.invalidateQueries({ queryKey: queryKeys.dashboard });
     },

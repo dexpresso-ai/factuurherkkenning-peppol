@@ -2,6 +2,7 @@ import { Download, ExternalLink, FileText, Maximize2 } from 'lucide-react';
 import type { Invoice } from '@/types';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatMoney } from '@/utils/formatters';
+import { getInvoiceSummaryDescription } from '@/utils/invoiceRecognition';
 
 interface PdfPreviewProps {
   invoice: Invoice;
@@ -85,6 +86,13 @@ export function PdfPreview({ invoice }: PdfPreviewProps) {
               </div>
             </div>
 
+            <div className="mt-4 rounded-lg bg-slate-50 px-3 py-2">
+              <div className="text-[9px] uppercase tracking-wider text-slate-400">Omschrijving</div>
+              <div className="mt-0.5 font-medium text-slate-900">
+                {getInvoiceSummaryDescription(invoice)}
+              </div>
+            </div>
+
             {/* Lines */}
             <div className="mt-5 flex-1">
               <div className="grid grid-cols-12 gap-2 border-b border-slate-200 pb-1.5 text-[9px] font-semibold uppercase tracking-wider text-slate-500">
@@ -115,19 +123,19 @@ export function PdfPreview({ invoice }: PdfPreviewProps) {
             {/* Totals */}
             <div className="mt-4 ml-auto w-1/2 border-t border-slate-200 pt-2">
               <div className="flex justify-between py-0.5">
-                <span className="text-slate-500">Subtotaal</span>
+                <span className="text-slate-500">Excl. BTW</span>
                 <span className="tabular-nums text-slate-900">
                   {formatMoney(invoice.subtotal)}
                 </span>
               </div>
               <div className="flex justify-between py-0.5">
-                <span className="text-slate-500">BTW</span>
+                <span className="text-slate-500">BTW-bedrag</span>
                 <span className="tabular-nums text-slate-900">
                   {formatMoney(invoice.vatTotal)}
                 </span>
               </div>
               <div className="mt-1 flex justify-between border-t border-slate-300 pt-1.5 font-bold">
-                <span>Totaal</span>
+                <span>Incl. BTW</span>
                 <span className="tabular-nums">{formatMoney(invoice.totalAmount)}</span>
               </div>
             </div>

@@ -207,3 +207,42 @@ Zoek in de codebase op `TODO` voor alle markers.
 ## Licentie
 
 Intern gebruik / demo.
+
+## Azure API-ready herkenningsvelden
+
+De extra factuurherkenningsvelden zijn voorbereid op een Azure/.NET backendkoppeling. De frontend gebruikt intern het bestaande `Invoice`-model, maar richting API wordt dit gemapt naar een stabiel `recognition`-blok.
+
+Belangrijkste bestanden:
+
+- `src/types/invoiceApi.ts` — API DTO's voor factuurherkenning.
+- `src/services/api/invoiceApiMapper.ts` — mapping tussen UI-model en API-contract.
+- `src/services/api/apiClient.ts` — echte fetch-client met Bearer token, timeout, `X-Correlation-ID` en optionele `X-Tenant-ID`.
+- `docs/AZURE_API_CONTRACT.md` — voorbeeldpayloads en endpoint-afspraken.
+
+Voor echte backend:
+
+```env
+VITE_USE_MOCK=false
+VITE_API_BASE_URL=https://<jouw-azure-api>
+VITE_API_TIMEOUT_MS=30000
+VITE_API_TENANT_ID=<optioneel>
+```
+
+De herkenningsvelden worden naar de backend gestuurd als:
+
+```json
+{
+  "recognition": {
+    "summaryDescription": "Abonnement Mei",
+    "amountExcludingVat": { "amount": 289.0, "currency": "EUR" },
+    "vatAmount": { "amount": 60.69, "currency": "EUR" },
+    "amountIncludingVat": { "amount": 349.69, "currency": "EUR" },
+    "gAccountAmount": { "amount": 0, "currency": "EUR" },
+    "paymentReference": "F-2026-0481",
+    "debtorNumber": "123456",
+    "period": "mei",
+    "periodYear": 2026,
+    "paymentMethod": "Bankoverschrijving"
+  }
+}
+```

@@ -67,12 +67,30 @@ export interface Invoice {
   supplierIban?: string;
 
   invoiceDate: string; // ISO date
-  dueDate?: string;
+  dueDate?: string | null;
+
+  /** Menselijke, korte herkenningsomschrijving, bijv. "Abonnement Mei". */
+  summaryDescription?: string;
+  /** Referentie voor betaling / betalingskenmerk uit de factuur. */
+  paymentReference?: string;
+  /** Debiteurnummer of klantnummer zoals vermeld op de factuur. */
+  debtorNumber?: string;
+  /** Herkende factuurperiode, bijv. "mei" of "Q2". */
+  period?: string;
+  /** Jaar dat hoort bij de herkende periode. */
+  periodYear?: number;
+  /** Betaalwijze met standaardwaarde "Bankoverschrijving". */
+  paymentMethod?: string;
+  /** Bedrag dat via een G-rekening betaald moet worden. */
+  gAccountAmount?: Money;
 
   lines: InvoiceLine[];
 
+  /** Bedrag exclusief BTW. */
   subtotal: Money;
+  /** Herkend BTW-bedrag. */
   vatTotal: Money;
+  /** Bedrag inclusief BTW. */
   totalAmount: Money;
 
   receiver?: PeppolReceiver;
@@ -100,7 +118,17 @@ export interface UpdateInvoiceDto {
   supplierIban?: string;
   invoiceNumber?: string;
   invoiceDate?: string;
-  dueDate?: string;
+  dueDate?: string | null;
+  summaryDescription?: string;
+  paymentReference?: string;
+  debtorNumber?: string;
+  period?: string;
+  periodYear?: number;
+  paymentMethod?: string;
+  gAccountAmount?: Money;
+  subtotal?: Money;
+  vatTotal?: Money;
+  totalAmount?: Money;
   lines?: InvoiceLine[];
   receiver?: PeppolReceiver;
 }

@@ -13,6 +13,7 @@ export const queryKeys = {
     list: (filters: InvoiceListFilters) => ['invoices', 'list', filters] as const,
     detail: (id: string) => ['invoices', 'detail', id] as const,
     audit: (id: string) => ['invoices', 'audit', id] as const,
+    recognition: (id: string) => ['invoices', 'recognition', id] as const,
   },
 
   suppliers: {
