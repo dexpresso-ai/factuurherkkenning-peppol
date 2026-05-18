@@ -53,7 +53,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
         </div>
 
         <div className="min-w-0 sm:hidden">
-          <div className="text-sm font-extrabold tracking-[-0.035em] text-foreground">Dexpresso</div>
+          <div className="text-sm font-extrabold tracking-[-0.035em] text-foreground">Peppol Access Agent</div>
           <div className="text-[11px] text-muted-foreground">Factuurhub</div>
         </div>
       </div>

@@ -20,7 +20,7 @@ export function PageHeader({
       <div className="min-w-0">
         <div className="dx-eyebrow mb-2">
           <Sparkles className="h-3 w-3" />
-          Dexpresso Factuurhub
+          Peppol Access Agent
         </div>
         <h1 className="gradient-text truncate text-3xl font-extrabold leading-[0.98] tracking-[-0.055em] lg:text-5xl">
           {title}

@@ -61,7 +61,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           </div>
           <div className="min-w-0">
             <div className="truncate text-[15px] font-extrabold leading-tight tracking-[-0.035em] text-foreground">
-              Dexpresso
+              Peppol Access Agent
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
               <Sparkles className="h-3 w-3 text-primary" />

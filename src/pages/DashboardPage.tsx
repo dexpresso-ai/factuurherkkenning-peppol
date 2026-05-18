@@ -57,7 +57,7 @@ export function DashboardPage() {
 
       {data && (
         <>
-          <DexpressoHero automationRate={data.automationRate} queue={data.counters.readyForPeppol} />
+          <PeppolAccessAgentHero automationRate={data.automationRate} queue={data.counters.readyForPeppol} />
 
           {/* KPI tiles */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -129,7 +129,7 @@ export function DashboardPage() {
   );
 }
 
-function DexpressoHero({ automationRate, queue }: { automationRate: number; queue: number }) {
+function PeppolAccessAgentHero({ automationRate, queue }: { automationRate: number; queue: number }) {
   return (
     <section className="glass-panel relative overflow-hidden rounded-[2rem] p-5 sm:p-7 lg:p-8">
       <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
@@ -140,7 +140,7 @@ function DexpressoHero({ automationRate, queue }: { automationRate: number; queu
             Facturen die zichzelf klaarzetten voor controle.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Van mailbox-chaos naar een gecontroleerde finance-flow: PDF&apos;s worden gelezen, gevalideerd, verrijkt en klaargezet voor Peppol. Precies de Dexpresso-look: donker, strak, scherp en met één duidelijke gouden flow.
+            Van mailbox-chaos naar een gecontroleerde finance-flow: PDF&apos;s worden gelezen, gevalideerd, verrijkt en klaargezet voor Peppol. In de Peppol Access Agent-stijl: donker, strak, scherp en met één duidelijke gouden flow.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <span className="dx-pill">Mailbox + PDF&apos;s</span>

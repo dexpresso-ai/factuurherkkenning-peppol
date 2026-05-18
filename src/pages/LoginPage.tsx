@@ -45,7 +45,7 @@ export function LoginPage() {
               </svg>
             </div>
             <div>
-              <div className="text-sm font-semibold tracking-tight">Dexpresso Factuurhub</div>
+              <div className="text-sm font-semibold tracking-tight">Peppol Access Agent</div>
               <div className="mt-0.5 text-xs text-white/55">AI-native finance workflow</div>
             </div>
           </div>
@@ -53,7 +53,7 @@ export function LoginPage() {
           <div className="max-w-2xl animate-fade-up">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
               <Sparkles className="h-3 w-3" />
-              Dexpresso invoice shot
+              Peppol Access Agent
             </div>
             <h1 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
               Facturen die zichzelf klaarzetten. Veilig, snel en zonder ruis.
@@ -82,7 +82,7 @@ export function LoginPage() {
           </div>
 
           <div className="flex items-center justify-between text-xs text-white/50">
-            <span>© {new Date().getFullYear()} Dexpresso</span>
+            <span>© {new Date().getFullYear()} Peppol Access Agent</span>
             <span className="inline-flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_16px_hsl(var(--success))]" />
               Secure finance environment
@@ -99,7 +99,7 @@ export function LoginPage() {
                 <path d="M9 9h7.5a4.5 4.5 0 0 1 0 9H13v5h-4V9Zm4 3v3h3.5a1.5 1.5 0 0 0 0-3H13Z" />
               </svg>
             </div>
-            <h2 className="gradient-text text-2xl font-semibold tracking-tight">Dexpresso Factuurhub</h2>
+            <h2 className="gradient-text text-2xl font-semibold tracking-tight">Peppol Access Agent</h2>
           </div>
 
           <div className="glass-panel rounded-3xl p-8">
