@@ -61,10 +61,10 @@ export default {
         sm: 'calc(var(--radius) - 8px)',
       },
       boxShadow: {
-        soft: '0 12px 30px -18px hsl(190 100% 55% / 0.48)',
-        card: '0 24px 80px -44px hsl(0 0% 0% / 0.9), inset 0 1px 0 hsl(0 0% 100% / 0.05)',
-        elevated: '0 30px 90px -40px hsl(190 100% 55% / 0.36), 0 18px 70px -50px hsl(0 0% 0% / 0.9)',
-        glow: '0 0 0 1px hsl(190 100% 55% / 0.22), 0 0 36px hsl(190 100% 55% / 0.16)',
+        soft: '0 18px 48px -22px hsl(36 100% 67% / 0.56)',
+        card: '0 28px 80px -44px hsl(0 0% 0% / 0.92), inset 0 1px 0 hsl(0 0% 100% / 0.06)',
+        elevated: '0 32px 96px -44px hsl(36 100% 67% / 0.34), 0 20px 80px -54px hsl(0 0% 0% / 0.92)',
+        glow: '0 0 0 1px hsl(36 100% 67% / 0.28), 0 0 38px hsl(36 100% 67% / 0.17)',
       },
       keyframes: {
         'accordion-down': {

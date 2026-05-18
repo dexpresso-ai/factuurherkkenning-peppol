@@ -18,15 +18,15 @@ export function PageHeader({
   return (
     <div className={cn('flex flex-wrap items-start justify-between gap-4', className)}>
       <div className="min-w-0">
-        <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+        <div className="dx-eyebrow mb-2">
           <Sparkles className="h-3 w-3" />
-          AI Factuurhub
+          Dexpresso Factuurhub
         </div>
-        <h1 className="gradient-text truncate text-3xl font-semibold tracking-tight lg:text-4xl">
+        <h1 className="gradient-text truncate text-3xl font-extrabold leading-[0.98] tracking-[-0.055em] lg:text-5xl">
           {title}
         </h1>
         {description && (
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground lg:text-[15px]">
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground lg:text-[15px]">
             {description}
           </p>
         )}

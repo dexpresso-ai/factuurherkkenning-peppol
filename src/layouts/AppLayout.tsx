@@ -1,17 +1,20 @@
+import * as React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
 export function AppLayout() {
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
   return (
     <div className="relative flex h-screen w-full overflow-hidden bg-background">
-      <div className="pointer-events-none absolute -left-28 top-24 h-80 w-80 rounded-full bg-primary/20 blur-3xl animate-pulse-glow" />
-      <div className="pointer-events-none absolute -right-32 bottom-16 h-96 w-96 rounded-full bg-accent/20 blur-3xl animate-pulse-glow [animation-delay:1.2s]" />
-      <Sidebar />
+      <div className="pointer-events-none absolute -left-28 top-24 h-80 w-80 rounded-full bg-primary/16 blur-3xl animate-pulse-glow" />
+      <div className="pointer-events-none absolute -right-32 bottom-16 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-pulse-glow [animation-delay:1.2s]" />
+      <Sidebar mobileOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-        <Topbar />
+        <Topbar onOpenSidebar={() => setMobileMenuOpen(true)} />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1480px] px-5 py-7 lg:px-10 lg:py-9">
+          <div className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-5 lg:px-10 lg:py-9">
             <div className="page-enter">
               <Outlet />
             </div>

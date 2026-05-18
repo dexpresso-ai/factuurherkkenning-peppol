@@ -45,47 +45,47 @@ export function LoginPage() {
               </svg>
             </div>
             <div>
-              <div className="text-sm font-semibold tracking-tight">Peppol Invoice Agent</div>
-              <div className="mt-0.5 text-xs text-white/55">AI-native invoice operations</div>
+              <div className="text-sm font-semibold tracking-tight">Dexpresso Factuurhub</div>
+              <div className="mt-0.5 text-xs text-white/55">AI-native finance workflow</div>
             </div>
           </div>
 
           <div className="max-w-2xl animate-fade-up">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
               <Sparkles className="h-3 w-3" />
-              Enterprise invoice workflow
+              Dexpresso invoice shot
             </div>
             <h1 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
-              Professionele factuurverwerking met volledige controle over elke stap.
+              Facturen die zichzelf klaarzetten. Veilig, snel en zonder ruis.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-white/68">
-              Van mailboxverwerking en automatische gegevensherkenning tot validatie, UBL-generatie en Peppol-status. Eén veilige workflow voor finance teams die snelheid, grip en betrouwbaarheid willen combineren.
+              Van mailbox-chaos naar een gecontroleerde finance-flow: herkennen, valideren, verrijken en klaarzetten voor Peppol. Donker, strak en met volledige grip op elke stap.
             </p>
 
             <div className="mt-9 grid max-w-2xl gap-4 xl:grid-cols-3">
               <Feature
                 Icon={Cloud}
-                title="Azure-first"
-                description="Opslag en verwerking in de eigen tenant."
+                title="Tenant-first"
+                description="Data blijft onder controle van de organisatie."
               />
               <Feature
                 Icon={ShieldCheck}
-                title="Governance"
-                description="Audit trail, validaties en statuslogging."
+                title="Grip & governance"
+                description="Validaties, logging en uitlegbare controles."
               />
               <Feature
                 Icon={Activity}
-                title="Realtime flow"
-                description="Van intake tot verzending visueel inzichtelijk."
+                title="Realtime shot"
+                description="Van PDF naar Peppol-status in één flow."
               />
             </div>
           </div>
 
           <div className="flex items-center justify-between text-xs text-white/50">
-            <span>© {new Date().getFullYear()} Acme Holding</span>
+            <span>© {new Date().getFullYear()} Dexpresso</span>
             <span className="inline-flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_16px_hsl(var(--success))]" />
-              Secure pilot environment
+              Secure finance environment
             </span>
           </div>
         </div>
@@ -99,7 +99,7 @@ export function LoginPage() {
                 <path d="M9 9h7.5a4.5 4.5 0 0 1 0 9H13v5h-4V9Zm4 3v3h3.5a1.5 1.5 0 0 0 0-3H13Z" />
               </svg>
             </div>
-            <h2 className="gradient-text text-2xl font-semibold tracking-tight">Peppol Invoice Agent</h2>
+            <h2 className="gradient-text text-2xl font-semibold tracking-tight">Dexpresso Factuurhub</h2>
           </div>
 
           <div className="glass-panel rounded-3xl p-8">
@@ -110,7 +110,7 @@ export function LoginPage() {
               Welkom terug
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Log in met uw Microsoft werkaccount om de factuurstroom te beheren.
+              Log in met je Microsoft werkaccount om de factuurflow te beheren.
             </p>
 
             <Button
@@ -136,7 +136,7 @@ export function LoginPage() {
             )}
 
             <div className="mt-7 border-t border-white/10 pt-5 text-center text-xs leading-relaxed text-muted-foreground">
-              Beveiligd met Microsoft Entra ID · Multi-tenant voorbereid
+              Beveiligd met Microsoft Entra ID · gebouwd voor gecontroleerde finance-processen
             </div>
           </div>
 

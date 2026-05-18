@@ -8,7 +8,7 @@ export const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'glass-panel relative overflow-hidden rounded-2xl text-card-foreground transition-all duration-300',
+      'glass-panel relative overflow-hidden rounded-3xl text-card-foreground transition-all duration-300',
       'before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent',
       className,
     )}
