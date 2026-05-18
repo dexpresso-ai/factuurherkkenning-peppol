@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Ban,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   EyeOff,
   FileCheck2,
@@ -11,6 +12,8 @@ import {
   Inbox,
   Loader2,
   MailCheck,
+  MailOpen,
+  Paperclip,
   RefreshCw,
   Search,
   ShieldAlert,
@@ -29,6 +32,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import {
   Table,
   TableBody,
@@ -56,6 +67,13 @@ import { formatBytes, formatDateTime, formatMoney } from '@/utils/formatters';
 
 type MailboxStatusFilter = MailboxMessageStatus | 'all';
 type MailboxOutcomeFilter = MailboxPrevalidationOutcome | 'all';
+
+interface MailboxActionHandlers {
+  isMutating: boolean;
+  onPrevalidate: (id: string) => void;
+  onProcess: (id: string) => void;
+  onIgnore: (id: string) => void;
+}
 
 const statusOptions: { value: MailboxStatusFilter; label: string }[] = [
   { value: 'all', label: 'Alle statussen' },
@@ -143,6 +161,7 @@ export function MailboxPage() {
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState<MailboxStatusFilter>('all');
   const [outcome, setOutcome] = React.useState<MailboxOutcomeFilter>('all');
+  const [selectedMessageId, setSelectedMessageId] = React.useState<string | undefined>();
 
   const filters = React.useMemo<MailboxMessageListFilters>(
     () => ({
@@ -156,8 +175,28 @@ export function MailboxPage() {
 
   const { data, isLoading, isError, error, refetch } = useMailboxMessages(filters);
   const syncMutation = useSyncMailboxNow();
+  const prevalidateMutation = usePrevalidateMailboxMessage();
+  const ignoreMutation = useIgnoreMailboxMessage();
+  const processMutation = useProcessMailboxMessage();
 
   const messages = React.useMemo(() => data?.items ?? [], [data?.items]);
+  const selectedMessage = React.useMemo(
+    () => messages.find((message) => message.id === selectedMessageId),
+    [messages, selectedMessageId],
+  );
+  const isMutating =
+    prevalidateMutation.isPending || ignoreMutation.isPending || processMutation.isPending;
+
+  const actionHandlers = React.useMemo<MailboxActionHandlers>(
+    () => ({
+      isMutating,
+      onPrevalidate: (id) => prevalidateMutation.mutate(id),
+      onProcess: (id) => processMutation.mutate(id),
+      onIgnore: (id) => ignoreMutation.mutate(id),
+    }),
+    [ignoreMutation, isMutating, prevalidateMutation, processMutation],
+  );
+
   const totals = React.useMemo(() => {
     return messages.reduce(
       (acc, message) => {
@@ -228,28 +267,28 @@ export function MailboxPage() {
 
       <section className="glass-panel overflow-hidden rounded-[2rem]">
         <div className="border-b border-white/10 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-2xl">
               <div className="flex items-center gap-2 text-base font-extrabold tracking-[-0.03em] text-foreground">
                 <MailCheck className="h-5 w-5 text-primary" />
                 Ingekomen mail
               </div>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                De tabel toont metadata, bijlagen en intakebesluit. Route-/goedkeuringsnamen worden bewust niet getoond bij hoge bedragen.
+                Alleen de belangrijkste kolommen staan in beeld. Klik op een mailregel om onderwerp, bijlagen, intake-uitleg en acties rechts te openen.
               </p>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative min-w-[17rem]">
+            <div className="grid gap-2 md:grid-cols-[minmax(14rem,1fr)_12rem_14rem_auto] xl:min-w-[48rem]">
+              <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Zoek op afzender, onderwerp of bijlage…"
+                  placeholder="Zoek op mail…"
                   className="pl-9"
                 />
               </div>
               <Select value={status} onValueChange={(value) => setStatus(value as MailboxStatusFilter)}>
-                <SelectTrigger className="min-w-[12rem]">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -261,7 +300,7 @@ export function MailboxPage() {
                 </SelectContent>
               </Select>
               <Select value={outcome} onValueChange={(value) => setOutcome(value as MailboxOutcomeFilter)}>
-                <SelectTrigger className="min-w-[14rem]">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -307,9 +346,22 @@ export function MailboxPage() {
         )}
 
         {!isLoading && !isError && messages.length > 0 && (
-          <MailboxTable messages={messages} />
+          <MailboxTable
+            messages={messages}
+            selectedMessageId={selectedMessageId}
+            onSelectMessage={setSelectedMessageId}
+          />
         )}
       </section>
+
+      <MailboxDetailsSheet
+        message={selectedMessage}
+        open={Boolean(selectedMessage)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedMessageId(undefined);
+        }}
+        actions={actionHandlers}
+      />
     </div>
   );
 }
@@ -350,160 +402,338 @@ function MailboxMetric({
   );
 }
 
-function MailboxTable({ messages }: { messages: MailboxMessage[] }) {
-  const prevalidateMutation = usePrevalidateMailboxMessage();
-  const ignoreMutation = useIgnoreMailboxMessage();
-  const processMutation = useProcessMailboxMessage();
-
-  const isMutating =
-    prevalidateMutation.isPending || ignoreMutation.isPending || processMutation.isPending;
+function MailboxTable({
+  messages,
+  selectedMessageId,
+  onSelectMessage,
+}: {
+  messages: MailboxMessage[];
+  selectedMessageId?: string;
+  onSelectMessage: (id: string) => void;
+}) {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, id: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelectMessage(id);
+    }
+  };
 
   return (
-    <div className="overflow-x-auto">
-      <Table className="min-w-[1180px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[11rem]">Ontvangen</TableHead>
-            <TableHead className="w-[15rem]">Afzender</TableHead>
-            <TableHead>Onderwerp</TableHead>
-            <TableHead className="w-[11rem]">Bijlagen</TableHead>
-            <TableHead className="w-[12rem]">Bedrag</TableHead>
-            <TableHead className="w-[13rem]">Intake</TableHead>
-            <TableHead className="w-[13rem]">Status</TableHead>
-            <TableHead className="w-[12rem]">Factuur</TableHead>
-            <TableHead className="w-[16rem] text-right">Acties</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {messages.map((message) => {
-            const canProcess = message.prevalidation?.outcome === 'accepted';
-            const showRouteGuard = message.prevalidation?.routeDisclosure === 'hidden_due_threshold';
-            return (
-              <TableRow key={message.id} className="align-top">
-                <TableCell>
-                  <div className="font-semibold text-foreground">{formatDateTime(message.receivedAt)}</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">{message.mailboxAddress}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="font-bold text-foreground">{message.fromName ?? 'Onbekend'}</div>
+    <Table className="table-fixed">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[11rem]">Ontvangen</TableHead>
+          <TableHead>Afzender</TableHead>
+          <TableHead className="w-[13rem]">Status</TableHead>
+          <TableHead className="w-[15rem]">Factuur koppeling</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {messages.map((message) => (
+          <TableRow
+            key={message.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`Open details voor mail van ${message.fromName ?? message.fromAddress}`}
+            data-state={selectedMessageId === message.id ? 'selected' : undefined}
+            className="group cursor-pointer align-middle outline-none focus-visible:bg-primary/[0.075]"
+            onClick={() => onSelectMessage(message.id)}
+            onKeyDown={(event) => handleKeyDown(event, message.id)}
+          >
+            <TableCell>
+              <div className="font-semibold text-foreground">{formatDateTime(message.receivedAt)}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">{message.mailboxAddress}</div>
+            </TableCell>
+            <TableCell>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-primary">
+                  <MailOpen className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate font-bold text-foreground">{message.fromName ?? 'Onbekend'}</div>
                   <div className="mt-1 truncate text-xs text-muted-foreground">{message.fromAddress}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="max-w-[26rem] font-semibold text-foreground">{message.subject}</div>
-                  {message.bodyPreview && (
-                    <div className="mt-1 line-clamp-2 max-w-[32rem] text-xs leading-relaxed text-muted-foreground">
-                      {message.bodyPreview}
-                    </div>
-                  )}
-                  {message.prevalidation?.summary && (
-                    <div className="mt-2 max-w-[32rem] text-[11px] leading-relaxed text-muted-foreground">
-                      {message.prevalidation.summary}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <AttachmentSummary message={message} />
-                </TableCell>
-                <TableCell>
-                  <div className="font-bold text-foreground">{formatMoney(message.estimatedTotalAmount)}</div>
-                  {showRouteGuard && (
-                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning/10 px-2 py-1 text-[11px] font-semibold text-warning">
-                      <EyeOff className="h-3 w-3" />
-                      Route verborgen
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <IntakeOutcomeBadge message={message} />
-                  {message.prevalidation?.rules?.[0] && (
-                    <div className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                      {message.prevalidation.rules.find((rule) => !rule.passed)?.message ?? message.prevalidation.rules[0].message}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <MailboxStatusBadge status={message.status} />
-                  {message.lastError && (
-                    <div className="mt-2 text-[11px] text-destructive">{message.lastError}</div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {message.linkedInvoiceId ? (
-                    <Button asChild variant="link" size="sm" className="h-auto px-0 py-0">
-                      <Link to={`/invoices/${message.linkedInvoiceId}`}>
-                        <FileText className="h-3.5 w-3.5" />
-                        {message.linkedInvoiceNumber ?? 'Open factuur'}
-                      </Link>
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Nog niet gekoppeld</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isMutating}
-                      onClick={() => prevalidateMutation.mutate(message.id)}
-                    >
-                      <RefreshCw className={cn('h-3.5 w-3.5', prevalidateMutation.isPending && 'animate-spin')} />
-                      Check
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={!canProcess || isMutating}
-                      onClick={() => processMutation.mutate(message.id)}
-                    >
-                      Verwerk
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={isMutating || message.status === 'ignored'}
-                      onClick={() => ignoreMutation.mutate(message.id)}
-                    >
-                      Negeer
-                    </Button>
+                </div>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-col items-start gap-2">
+                <MailboxStatusBadge status={message.status} />
+                {message.prevalidation?.outcome === 'manual_review' && (
+                  <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-warning">
+                    <EyeOff className="h-3 w-3" />
+                    Details afgeschermd
                   </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="flex items-center justify-between gap-3">
+                <InvoiceLink message={message} />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function InvoiceLink({ message }: { message: MailboxMessage }) {
+  if (!message.linkedInvoiceId) {
+    return <span className="text-xs text-muted-foreground">Nog niet gekoppeld</span>;
+  }
+
+  return (
+    <div onClick={(event) => event.stopPropagation()}>
+      <Button asChild variant="link" size="sm" className="h-auto px-0 py-0 text-left">
+        <Link to={`/invoices/${message.linkedInvoiceId}`}>
+          <FileText className="h-3.5 w-3.5" />
+          {message.linkedInvoiceNumber ?? 'Open factuur'}
+        </Link>
+      </Button>
     </div>
   );
 }
 
-function AttachmentSummary({ message }: { message: MailboxMessage }) {
-  if (!message.hasAttachments) {
-    return (
-      <Badge variant="destructive">
-        <XCircle className="h-3 w-3" />
-        Geen bijlage
-      </Badge>
-    );
+function MailboxDetailsSheet({
+  message,
+  open,
+  onOpenChange,
+  actions,
+}: {
+  message?: MailboxMessage;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  actions: MailboxActionHandlers;
+}) {
+  if (!message) {
+    return <Sheet open={open} onOpenChange={onOpenChange} />;
   }
 
+  const canProcess = message.prevalidation?.outcome === 'accepted';
+  const routeHidden = message.prevalidation?.routeDisclosure === 'hidden_due_threshold';
+  const firstFailedRule = message.prevalidation?.rules.find((rule) => !rule.passed);
+
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-1.5">
-        {message.pdfAttachmentCount > 0 && <Badge variant="default">PDF {message.pdfAttachmentCount}</Badge>}
-        {message.xmlAttachmentCount > 0 && <Badge variant="info">XML {message.xmlAttachmentCount}</Badge>}
-        {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount > 0 && (
-          <Badge variant="muted">Overig {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount}</Badge>
-        )}
-      </div>
-      <div className="space-y-1">
-        {message.attachments.slice(0, 2).map((attachment) => (
-          <div key={attachment.id} className="truncate text-[11px] text-muted-foreground">
-            {attachment.fileName} · {formatBytes(attachment.sizeBytes)}
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-[34rem]">
+        <div className="border-b border-white/10 p-5 pr-12">
+          <SheetHeader>
+            <div className="flex flex-wrap items-center gap-2">
+              <MailboxStatusBadge status={message.status} />
+              <IntakeOutcomeBadge message={message} />
+            </div>
+            <SheetTitle className="mt-3">{message.subject}</SheetTitle>
+            <SheetDescription>
+              {message.fromName ?? message.fromAddress} · {formatDateTime(message.receivedAt)}
+            </SheetDescription>
+          </SheetHeader>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+          {routeHidden && (
+            <div className="rounded-3xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
+              <div className="flex items-center gap-2 font-extrabold">
+                <EyeOff className="h-4 w-4" />
+                Route-informatie verborgen
+              </div>
+              <p className="mt-2 leading-relaxed text-warning/90">
+                Het totaalbedrag is hoger dan € 5.000. Route- of goedkeuringsnamen worden daarom niet getoond en deze mail vraagt handmatige controle.
+              </p>
+            </div>
+          )}
+
+          <DrawerSection title="Mailgegevens">
+            <DetailRow label="Ontvangen" value={formatDateTime(message.receivedAt)} />
+            <DetailRow label="Mailbox" value={message.mailboxAddress} />
+            <DetailRow label="Afzender" value={message.fromName ?? 'Onbekend'} />
+            <DetailRow label="E-mailadres" value={message.fromAddress} />
+            <DetailRow label="Geschat bedrag" value={formatMoney(message.estimatedTotalAmount)} strong />
+            {message.bodyPreview && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Preview</div>
+                <p className="mt-2 text-sm leading-relaxed text-foreground/85">{message.bodyPreview}</p>
+              </div>
+            )}
+          </DrawerSection>
+
+          <DrawerSection title="Bijlagen">
+            <div className="flex flex-wrap gap-2">
+              {message.hasAttachments ? (
+                <>
+                  {message.pdfAttachmentCount > 0 && <Badge variant="default">PDF {message.pdfAttachmentCount}</Badge>}
+                  {message.xmlAttachmentCount > 0 && <Badge variant="info">XML {message.xmlAttachmentCount}</Badge>}
+                  {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount > 0 && (
+                    <Badge variant="muted">Overig {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount}</Badge>
+                  )}
+                </>
+              ) : (
+                <Badge variant="destructive">
+                  <XCircle className="h-3 w-3" />
+                  Geen bijlage
+                </Badge>
+              )}
+            </div>
+            {message.attachments.length > 0 && (
+              <div className="space-y-2">
+                {message.attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 font-semibold text-foreground">
+                        <Paperclip className="h-4 w-4 shrink-0 text-primary" />
+                        <span className="truncate">{attachment.fileName}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {attachment.contentType} · {formatBytes(attachment.sizeBytes)}
+                      </div>
+                    </div>
+                    <Badge variant={attachment.isInvoiceCandidate ? 'success' : 'muted'}>
+                      {attachment.isInvoiceCandidate ? 'Kandidaat' : 'Ruis'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </DrawerSection>
+
+          <DrawerSection title="Intakebesluit">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <IntakeOutcomeBadge message={message} />
+                {firstFailedRule && <Badge variant="warning">Aandachtspunt</Badge>}
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {message.prevalidation?.summary ?? 'Deze mail is nog niet vooraf beoordeeld.'}
+              </p>
+            </div>
+            {message.prevalidation?.rules && message.prevalidation.rules.length > 0 && (
+              <div className="space-y-2">
+                {message.prevalidation.rules.map((rule) => (
+                  <div
+                    key={rule.code}
+                    className={cn(
+                      'rounded-2xl border p-3 text-sm',
+                      rule.passed
+                        ? 'border-success/20 bg-success/5 text-foreground/90'
+                        : rule.severity === 'warning'
+                          ? 'border-warning/30 bg-warning/10 text-warning'
+                          : 'border-destructive/25 bg-destructive/10 text-destructive',
+                    )}
+                  >
+                    <div className="flex items-start gap-2">
+                      {rule.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
+                      <div className="leading-relaxed">{rule.message}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </DrawerSection>
+
+          <DrawerSection title="Factuurkoppeling">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              {message.linkedInvoiceId ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Gekoppelde factuur</div>
+                    <div className="mt-1 font-extrabold text-foreground">{message.linkedInvoiceNumber ?? message.linkedInvoiceId}</div>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/invoices/${message.linkedInvoiceId}`}>
+                      <FileText className="h-3.5 w-3.5" />
+                      Open
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">Nog niet gekoppeld aan een factuur.</div>
+              )}
+            </div>
+          </DrawerSection>
+
+          <DrawerSection title="Techniek">
+            <DetailRow label="Message ID" value={message.graphMessageId || '—'} mono />
+            <DetailRow label="Immutable ID" value={message.graphImmutableMessageId ?? '—'} mono />
+            <DetailRow label="Conversation ID" value={message.conversationId ?? '—'} mono />
+            <DetailRow label="Laatste actie" value={message.lastActionAt ? formatDateTime(message.lastActionAt) : '—'} />
+            {message.lastError && <DetailRow label="Laatste fout" value={message.lastError} />}
+          </DrawerSection>
+        </div>
+
+        <div className="border-t border-white/10 bg-card/95 p-4">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <Button
+              variant="outline"
+              disabled={actions.isMutating}
+              onClick={() => actions.onPrevalidate(message.id)}
+            >
+              <RefreshCw className={cn('h-4 w-4', actions.isMutating && 'animate-spin')} />
+              Check
+            </Button>
+            <Button
+              disabled={!canProcess || actions.isMutating}
+              onClick={() => actions.onProcess(message.id)}
+            >
+              Verwerk
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={actions.isMutating || message.status === 'ignored'}
+              onClick={() => actions.onIgnore(message.id)}
+            >
+              Negeer
+            </Button>
           </div>
-        ))}
-        {message.attachments.length > 2 && (
-          <div className="text-[11px] text-muted-foreground">+{message.attachments.length - 2} extra</div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function DrawerSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-3">
+        <h3 className="text-sm font-extrabold uppercase tracking-[0.14em] text-muted-foreground">{title}</h3>
+        <Separator className="flex-1" />
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  strong = false,
+  mono = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  strong?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3">
+      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+      <div
+        className={cn(
+          'max-w-[62%] break-words text-right text-sm text-foreground/90',
+          strong && 'font-extrabold text-foreground',
+          mono && 'font-mono text-[11px] leading-relaxed text-muted-foreground',
         )}
+      >
+        {value}
       </div>
     </div>
   );
@@ -513,7 +743,7 @@ function MailboxTableSkeleton() {
   return (
     <div className="space-y-3 p-5">
       {Array.from({ length: 6 }).map((_, index) => (
-        <Skeleton key={index} className="h-20 rounded-2xl" />
+        <Skeleton key={index} className="h-16 rounded-2xl" />
       ))}
     </div>
   );
