@@ -4,18 +4,26 @@ import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   Building2,
+  ChevronRight,
   FileWarning,
   Network,
   ShieldX,
-  ChevronRight,
 } from 'lucide-react';
 import type { Invoice, ValidationIssue } from '@/types';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { PageHeader } from '@/components/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/EmptyState';
-import { InvoiceStatusBadge } from '@/components/StatusBadge';
+import { InvoiceStatusBadge, PeppolStatusBadge } from '@/components/StatusBadge';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { ConfidenceIndicator } from '@/features/invoices/ConfidenceIndicator';
 import { useInvoices } from '@/hooks/useInvoices';
 import { formatDate, formatMoney } from '@/utils/formatters';
@@ -26,6 +34,11 @@ interface ExceptionGroup {
   description: string;
   Icon: React.ComponentType<{ className?: string }>;
   match: (issues: ValidationIssue[]) => boolean;
+}
+
+interface ExceptionRow {
+  invoice: Invoice;
+  reasons: ExceptionGroup[];
 }
 
 const groups: ExceptionGroup[] = [
@@ -44,8 +57,7 @@ const groups: ExceptionGroup[] = [
     match: (issues) =>
       issues.some(
         (i) => i.code.startsWith('VAT_') && i.code !== 'VAT_FOREIGN',
-      ) ||
-      issues.some((i) => i.code.includes('VAT_MISMATCH')),
+      ) || issues.some((i) => i.code.includes('VAT_MISMATCH')),
   },
   {
     key: 'supplier_unknown',
@@ -73,18 +85,33 @@ const groups: ExceptionGroup[] = [
   },
 ];
 
+const fallbackGroup: ExceptionGroup = {
+  key: 'other',
+  title: 'Overige uitval',
+  description: 'Handmatige controle vereist',
+  Icon: AlertTriangle,
+  match: () => true,
+};
+
 export function ExceptionsPage() {
   const { data, isLoading } = useInvoices({ hasIssues: true });
 
-  const grouped = useMemo(() => {
+  const rows = useMemo<ExceptionRow[]>(() => {
     const items = data?.items ?? [];
-    return groups.map((g) => ({
-      ...g,
-      invoices: items.filter((inv) => g.match(inv.validationIssues)),
-    }));
-  }, [data]);
 
-  const totalExceptions = grouped.reduce((sum, g) => sum + g.invoices.length, 0);
+    return items
+      .map((invoice) => {
+        const matchedReasons = groups.filter((group) =>
+          group.match(invoice.validationIssues),
+        );
+
+        return {
+          invoice,
+          reasons: matchedReasons.length > 0 ? matchedReasons : [fallbackGroup],
+        };
+      })
+      .filter((row) => row.invoice.validationIssues.length > 0);
+  }, [data]);
 
   return (
     <div className="space-y-6">
@@ -92,18 +119,16 @@ export function ExceptionsPage() {
 
       <PageHeader
         title="Uitval & uitzonderingen"
-        description="Facturen die handmatige aandacht nodig hebben, gegroepeerd op reden."
+        description={
+          rows.length > 0
+            ? `${rows.length} ${rows.length === 1 ? 'factuur heeft' : 'facturen hebben'} handmatige aandacht nodig.`
+            : 'Facturen die handmatige aandacht nodig hebben, in één overzichtelijke lijst.'
+        }
       />
 
-      {isLoading && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 rounded-xl" />
-          ))}
-        </div>
-      )}
+      {isLoading && <ExceptionTableSkeleton />}
 
-      {!isLoading && totalExceptions === 0 && (
+      {!isLoading && rows.length === 0 && (
         <EmptyState
           icon={AlertTriangle}
           title="Geen uitval"
@@ -111,83 +136,146 @@ export function ExceptionsPage() {
         />
       )}
 
-      {!isLoading && totalExceptions > 0 && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          {grouped
-            .filter((g) => g.invoices.length > 0)
-            .map((g) => (
-              <ExceptionGroupCard key={g.key} group={g} />
-            ))}
-        </div>
-      )}
+      {!isLoading && rows.length > 0 && <ExceptionTable rows={rows} />}
     </div>
   );
 }
 
-function ExceptionGroupCard({
-  group,
-}: {
-  group: ExceptionGroup & { invoices: Invoice[] };
-}) {
+function ExceptionTable({ rows }: { rows: ExceptionRow[] }) {
   const navigate = useNavigate();
-  const { Icon } = group;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-              <Icon className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold">{group.title}</div>
-              <div className="text-xs font-normal text-muted-foreground">
-                {group.description}
+    <div className="glass-panel overflow-hidden rounded-3xl">
+      <Table className="min-w-[1120px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Uitvalreden</TableHead>
+            <TableHead>Leverancier</TableHead>
+            <TableHead>Factuurnr.</TableHead>
+            <TableHead>Datum</TableHead>
+            <TableHead className="text-right">Bedrag</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Confidence</TableHead>
+            <TableHead>Peppol</TableHead>
+            <TableHead className="w-10" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map(({ invoice, reasons }) => {
+            const primaryReason = reasons[0];
+            const PrimaryIcon = primaryReason.Icon;
+
+            return (
+              <TableRow
+                key={invoice.id}
+                className="group cursor-pointer"
+                onClick={() => navigate(`/invoices/${invoice.id}`)}
+              >
+                <TableCell className="min-w-[280px]">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive ring-1 ring-destructive/15">
+                      <PrimaryIcon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {reasons.map((reason) => (
+                          <Badge key={reason.key} variant="destructive">
+                            {reason.title}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {primaryReason.description}
+                      </div>
+                    </div>
+                  </div>
+                </TableCell>
+
+                <TableCell>
+                  <div className="font-semibold text-foreground">
+                    {invoice.supplierName}
+                  </div>
+                  {invoice.supplierKvk ? (
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      KVK {invoice.supplierKvk}
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      KVK ontbreekt
+                    </div>
+                  )}
+                </TableCell>
+
+                <TableCell>
+                  <span className="rounded-lg border border-white/10 bg-white/[0.035] px-2 py-1 font-mono text-xs text-foreground/90">
+                    {invoice.invoiceNumber || '—'}
+                  </span>
+                </TableCell>
+
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDate(invoice.invoiceDate)}
+                </TableCell>
+
+                <TableCell className="text-right tabular-nums">
+                  {invoice.totalAmount.amount > 0 ? (
+                    <span className="font-semibold text-foreground">
+                      {formatMoney(invoice.totalAmount)}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+
+                <TableCell>
+                  <InvoiceStatusBadge status={invoice.status} />
+                </TableCell>
+
+                <TableCell>
+                  <ConfidenceIndicator score={invoice.confidenceScore} />
+                </TableCell>
+
+                <TableCell>
+                  <PeppolStatusBadge status={invoice.peppolStatus} />
+                </TableCell>
+
+                <TableCell>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function ExceptionTableSkeleton() {
+  return (
+    <div className="glass-panel overflow-hidden rounded-3xl">
+      <div className="border-b border-white/10 bg-white/[0.035] px-4 py-3">
+        <Skeleton className="h-4 w-44" />
+      </div>
+      <div className="divide-y divide-white/10">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="grid grid-cols-8 items-center gap-4 px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-32 rounded-full" />
+                <Skeleton className="h-3 w-44" />
               </div>
             </div>
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16 justify-self-end" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-5 w-24 rounded-full" />
           </div>
-          <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
-            {group.invoices.length}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-0">
-        <ul className="divide-y divide-border">
-          {group.invoices.map((inv) => (
-            <li key={inv.id}>
-              <button
-                onClick={() => navigate(`/invoices/${inv.id}`)}
-                className="flex w-full items-center gap-3 px-6 py-3 text-left transition-colors hover:bg-muted/50"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-medium text-foreground">
-                      {inv.supplierName}
-                    </span>
-                    <InvoiceStatusBadge status={inv.status} />
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="font-mono">{inv.invoiceNumber}</span>
-                    <span>·</span>
-                    <span>{formatDate(inv.invoiceDate)}</span>
-                    {inv.totalAmount.amount > 0 && (
-                      <>
-                        <span>·</span>
-                        <span className="tabular-nums">
-                          {formatMoney(inv.totalAmount)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <ConfidenceIndicator score={inv.confidenceScore} />
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+        ))}
+      </div>
+    </div>
   );
 }
