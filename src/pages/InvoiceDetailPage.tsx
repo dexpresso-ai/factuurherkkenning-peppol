@@ -40,73 +40,75 @@ export function InvoiceDetailPage() {
 
   if (isLoading || !invoice) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <Skeleton className="h-4 w-64" />
         <Skeleton className="h-8 w-96" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-[700px] rounded-xl" />
-          <Skeleton className="h-[700px] rounded-xl" />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Skeleton className="h-[720px] rounded-xl" />
+          <Skeleton className="h-[720px] rounded-xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <Breadcrumbs
-        items={[
-          { label: 'Dashboard', to: '/' },
-          { label: 'Facturen', to: '/invoices' },
-          { label: invoice.invoiceNumber },
-        ]}
-      />
+    <div className="flex min-h-0 flex-col gap-3 lg:h-[calc(100dvh-9.5rem)]">
+      <div className="shrink-0 space-y-2">
+        <Breadcrumbs
+          items={[
+            { label: 'Dashboard', to: '/' },
+            { label: 'Facturen', to: '/invoices' },
+            { label: invoice.invoiceNumber },
+          ]}
+        />
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link
-            to="/invoices"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-3 w-3" /> Terug
-          </Link>
-          <h1 className="mt-1 flex items-baseline gap-3 text-2xl font-semibold tracking-tight text-foreground">
-            <span className="font-mono">{invoice.invoiceNumber}</span>
-            <span className="text-base font-normal text-muted-foreground">
-              {invoice.supplierName}
-            </span>
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {getInvoiceSummaryDescription(invoice)}
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <Link
+              to="/invoices"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-3 w-3" /> Terug
+            </Link>
+            <h1 className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              <span className="font-mono">{invoice.invoiceNumber}</span>
+              <span className="text-sm font-normal text-muted-foreground sm:text-base">
+                {invoice.supplierName}
+              </span>
+            </h1>
+            <p className="mt-0.5 max-w-3xl truncate text-sm text-muted-foreground">
+              {getInvoiceSummaryDescription(invoice)}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <InvoiceStatusBadge status={invoice.status} />
+            <PeppolStatusBadge status={invoice.peppolStatus} />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <InvoiceStatusBadge status={invoice.status} />
-          <PeppolStatusBadge status={invoice.peppolStatus} />
-        </div>
+
+        {invoice.validationIssues.length > 0 && (
+          <ValidationBlock issues={invoice.validationIssues} showSuccessWhenEmpty={false} />
+        )}
       </div>
 
-      {/* Validation block — always visible at top */}
-      <ValidationBlock issues={invoice.validationIssues} />
-
-      {/* Split panel — PDF left, fields/audit right (tabs) */}
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card className="overflow-hidden p-0 lg:h-[calc(100vh-320px)] lg:min-h-[600px]">
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,0.96fr)_minmax(480px,1.04fr)]">
+        <Card className="min-h-[520px] overflow-hidden p-0 lg:min-h-0">
           <PdfPreview invoice={invoice} />
         </Card>
 
-        <Card className="overflow-hidden p-0 lg:h-[calc(100vh-320px)] lg:min-h-[600px]">
-          <Tabs defaultValue="fields" className="flex h-full flex-col">
-            <div className="border-b border-border bg-muted/40 px-4 py-2">
-              <TabsList>
-                <TabsTrigger value="fields">
+        <Card className="min-h-[640px] overflow-hidden p-0 lg:min-h-0">
+          <Tabs defaultValue="fields" className="flex h-full min-h-0 flex-col">
+            <div className="shrink-0 border-b border-white/10 bg-muted/30 px-4 py-3">
+              <TabsList className="h-9 max-w-full overflow-x-auto">
+                <TabsTrigger value="fields" className="h-7 px-3 text-xs sm:text-sm">
                   <FileText className="mr-1.5 h-3.5 w-3.5" />
                   Velden
                 </TabsTrigger>
-                <TabsTrigger value="validation">
+                <TabsTrigger value="validation" className="h-7 px-3 text-xs sm:text-sm">
                   <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
                   Validatie
                 </TabsTrigger>
-                <TabsTrigger value="audit">
+                <TabsTrigger value="audit" className="h-7 px-3 text-xs sm:text-sm">
                   <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
                   Audit
                 </TabsTrigger>
@@ -115,14 +117,14 @@ export function InvoiceDetailPage() {
 
             <TabsContent
               value="fields"
-              className="m-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+              className="m-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
             >
               <ExtractionFields key={`${invoice.id}-${invoice.updatedAt}`} invoice={invoice} />
             </TabsContent>
 
             <TabsContent
               value="validation"
-              className="m-0 flex-1 overflow-y-auto p-6 data-[state=inactive]:hidden"
+              className="m-0 min-h-0 flex-1 overflow-y-auto p-5 data-[state=inactive]:hidden"
             >
               <h3 className="mb-3 text-sm font-semibold">Validatie-resultaat</h3>
               <ValidationBlock issues={invoice.validationIssues} />
@@ -131,27 +133,16 @@ export function InvoiceDetailPage() {
               <dl className="space-y-2 text-sm">
                 <DetailRow label="Van" value={invoice.source.fromAddress} mono />
                 <DetailRow label="Onderwerp" value={invoice.source.subject} />
-                <DetailRow
-                  label="Bijlage"
-                  value={invoice.source.attachmentName}
-                  mono
-                />
-                <DetailRow
-                  label="Message-ID"
-                  value={invoice.source.messageId}
-                  mono
-                />
+                <DetailRow label="Bijlage" value={invoice.source.attachmentName} mono />
+                <DetailRow label="Message-ID" value={invoice.source.messageId} mono />
               </dl>
             </TabsContent>
 
             <TabsContent
               value="audit"
-              className="m-0 flex-1 overflow-y-auto p-6 data-[state=inactive]:hidden"
+              className="m-0 min-h-0 flex-1 overflow-y-auto p-5 data-[state=inactive]:hidden"
             >
-              <AuditTimeline
-                entries={auditEntries ?? []}
-                isLoading={auditLoading}
-              />
+              <AuditTimeline entries={auditEntries ?? []} isLoading={auditLoading} />
             </TabsContent>
           </Tabs>
         </Card>

@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
-import { Save, RefreshCw, CheckCircle2, Send } from 'lucide-react';
+import { CheckCircle2, RefreshCw, Save, Send } from 'lucide-react';
 import type { Invoice, Money, UpdateInvoiceDto } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
   Table,
@@ -15,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ConfidenceIndicator } from './ConfidenceIndicator';
+import { cn } from '@/lib/utils';
 import { formatMoney } from '@/utils/formatters';
 import {
   getGAccountAmount,
@@ -30,6 +29,7 @@ import {
   useSendToPeppol,
   useUpdateInvoice,
 } from '@/hooks/useInvoices';
+import { ConfidenceIndicator } from './ConfidenceIndicator';
 
 interface ExtractionFieldsProps {
   invoice: Invoice;
@@ -190,7 +190,6 @@ export function ExtractionFields({ invoice }: ExtractionFieldsProps) {
   const approveMutation = useApproveInvoice(invoice.id);
   const sendMutation = useSendToPeppol(invoice.id);
 
-
   const draft = useMemo(() => buildUpdateDto(invoice, form), [invoice, form]);
   const isDirty = Object.keys(draft).length > 0;
 
@@ -210,295 +209,298 @@ export function ExtractionFields({ invoice }: ExtractionFieldsProps) {
   const canSend =
     invoice.status === 'ready_for_peppol' || invoice.status === 'review_required';
   const canApprove = invoice.status === 'review_required';
-
   const gAccountAmount = getGAccountAmount(invoice);
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-6">
-      {/* ── Acties bovenaan ── */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => reprocessMutation.mutate()}
-          disabled={reprocessMutation.isPending}
-        >
-          <RefreshCw
-            className={
-              'h-3.5 w-3.5 ' + (reprocessMutation.isPending ? 'animate-spin' : '')
-            }
-          />
-          Opnieuw verwerken
-        </Button>
-
-        {canApprove && (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-white/10 bg-card/80 px-4 py-3 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => approveMutation.mutate()}
-            disabled={approveMutation.isPending}
+            onClick={() => reprocessMutation.mutate()}
+            disabled={reprocessMutation.isPending}
+            className="h-9"
           >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Goedkeuren
+            <RefreshCw
+              className={cn('h-3.5 w-3.5', reprocessMutation.isPending && 'animate-spin')}
+            />
+            Opnieuw verwerken
           </Button>
-        )}
 
-        {canSend && (
-          <Button
-            size="sm"
-            onClick={() => sendMutation.mutate()}
-            disabled={sendMutation.isPending}
-          >
-            <Send className="h-3.5 w-3.5" />
-            {sendMutation.isPending ? 'Versturen…' : 'Verstuur via Peppol'}
-          </Button>
-        )}
+          {canApprove && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => approveMutation.mutate()}
+              disabled={approveMutation.isPending}
+              className="h-9"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Goedkeuren
+            </Button>
+          )}
 
-        <div className="ml-auto">
-          <ConfidenceIndicator score={invoice.confidenceScore} showLabel />
+          {canSend && (
+            <Button
+              size="sm"
+              onClick={() => sendMutation.mutate()}
+              disabled={sendMutation.isPending}
+              className="h-9"
+            >
+              <Send className="h-3.5 w-3.5" />
+              {sendMutation.isPending ? 'Versturen…' : 'Verstuur via Peppol'}
+            </Button>
+          )}
+
+          <div className="ml-auto flex min-w-[130px] justify-end">
+            <ConfidenceIndicator score={invoice.confidenceScore} showLabel />
+          </div>
         </div>
       </div>
 
-      <Separator />
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="space-y-3 pb-4">
+          <FieldSection
+            title="Herkenning & betaling"
+            description="De velden die straks als recognition payload richting Azure gaan."
+          >
+            <Field className="sm:col-span-2" label="Algemene omschrijving">
+              <Input
+                className="h-9"
+                value={form.summaryDescription}
+                placeholder="Bijv. Abonnement Mei"
+                onChange={(e) => set('summaryDescription', e.target.value)}
+              />
+            </Field>
+            <Field label="Betaalkenmerk">
+              <Input
+                className="h-9"
+                value={form.paymentReference}
+                placeholder="Betalingskenmerk / referentie"
+                onChange={(e) => set('paymentReference', e.target.value)}
+              />
+            </Field>
+            <Field label="Debiteurnummer">
+              <Input
+                className="h-9"
+                value={form.debtorNumber}
+                placeholder="Klant- of debiteurnummer"
+                onChange={(e) => set('debtorNumber', e.target.value)}
+              />
+            </Field>
+            <Field label="Periode">
+              <Input
+                className="h-9"
+                value={form.period}
+                placeholder="mei"
+                onChange={(e) => set('period', e.target.value)}
+              />
+            </Field>
+            <Field label="Jaar">
+              <Input
+                className="h-9"
+                type="number"
+                min="1900"
+                max="2100"
+                value={form.periodYear}
+                onChange={(e) => set('periodYear', e.target.value)}
+              />
+            </Field>
+            <Field label="Betaalwijze">
+              <Input
+                className="h-9"
+                value={form.paymentMethod}
+                placeholder="Bankoverschrijving"
+                onChange={(e) => set('paymentMethod', e.target.value)}
+              />
+            </Field>
+            <Field label="Bedrag G-rekening">
+              <Input
+                className="h-9"
+                type="number"
+                step="0.01"
+                value={form.gAccountAmount}
+                onChange={(e) => set('gAccountAmount', e.target.value)}
+              />
+            </Field>
+            <Field label="Bedrag excl. BTW">
+              <Input
+                className="h-9"
+                type="number"
+                step="0.01"
+                value={form.subtotal}
+                onChange={(e) => set('subtotal', e.target.value)}
+              />
+            </Field>
+            <Field label="BTW-bedrag">
+              <Input
+                className="h-9"
+                type="number"
+                step="0.01"
+                value={form.vatTotal}
+                onChange={(e) => set('vatTotal', e.target.value)}
+              />
+            </Field>
+            <Field className="sm:col-span-2" label="Bedrag incl. BTW">
+              <Input
+                className="h-9 font-semibold"
+                type="number"
+                step="0.01"
+                value={form.totalAmount}
+                onChange={(e) => set('totalAmount', e.target.value)}
+              />
+            </Field>
+          </FieldSection>
 
-      {/* ── Herkenning ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Herkenning & betaling</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          <Field label="Algemene omschrijving">
-            <Input
-              value={form.summaryDescription}
-              placeholder="Bijv. Abonnement Mei"
-              onChange={(e) => set('summaryDescription', e.target.value)}
-            />
-          </Field>
-          <Field label="Betaalkenmerk">
-            <Input
-              value={form.paymentReference}
-              placeholder="Betalingskenmerk / referentie"
-              onChange={(e) => set('paymentReference', e.target.value)}
-            />
-          </Field>
-          <Field label="Debiteurnummer">
-            <Input
-              value={form.debtorNumber}
-              placeholder="Klant- of debiteurnummer"
-              onChange={(e) => set('debtorNumber', e.target.value)}
-            />
-          </Field>
-          <Field label="Betaalwijze">
-            <Input
-              value={form.paymentMethod}
-              placeholder="Bankoverschrijving"
-              onChange={(e) => set('paymentMethod', e.target.value)}
-            />
-          </Field>
-          <Field label="Periode">
-            <Input
-              value={form.period}
-              placeholder="mei"
-              onChange={(e) => set('period', e.target.value)}
-            />
-          </Field>
-          <Field label="Jaar">
-            <Input
-              type="number"
-              min="1900"
-              max="2100"
-              value={form.periodYear}
-              onChange={(e) => set('periodYear', e.target.value)}
-            />
-          </Field>
-          <Field label="Bedrag excl. BTW">
-            <Input
-              type="number"
-              step="0.01"
-              value={form.subtotal}
-              onChange={(e) => set('subtotal', e.target.value)}
-            />
-          </Field>
-          <Field label="BTW-bedrag">
-            <Input
-              type="number"
-              step="0.01"
-              value={form.vatTotal}
-              onChange={(e) => set('vatTotal', e.target.value)}
-            />
-          </Field>
-          <Field label="Bedrag incl. BTW">
-            <Input
-              type="number"
-              step="0.01"
-              value={form.totalAmount}
-              onChange={(e) => set('totalAmount', e.target.value)}
-            />
-          </Field>
-          <Field label="Bedrag G-rekening">
-            <Input
-              type="number"
-              step="0.01"
-              value={form.gAccountAmount}
-              onChange={(e) => set('gAccountAmount', e.target.value)}
-            />
-          </Field>
-        </CardContent>
-      </Card>
+          <FieldSection title="Leverancier">
+            <Field label="Naam">
+              <Input
+                className="h-9"
+                value={form.supplierName}
+                onChange={(e) => set('supplierName', e.target.value)}
+              />
+            </Field>
+            <Field label="KVK-nummer">
+              <Input
+                className="h-9"
+                value={form.supplierKvk}
+                placeholder="12345678"
+                onChange={(e) => set('supplierKvk', e.target.value)}
+              />
+            </Field>
+            <Field label="BTW-nummer">
+              <Input
+                className="h-9"
+                value={form.supplierVatNumber}
+                placeholder="NL000000000B00"
+                onChange={(e) => set('supplierVatNumber', e.target.value)}
+              />
+            </Field>
+            <Field label="IBAN">
+              <Input
+                className="h-9"
+                value={form.supplierIban}
+                placeholder="NL00BANK0000000000"
+                onChange={(e) => set('supplierIban', e.target.value)}
+              />
+            </Field>
+          </FieldSection>
 
-      {/* ── Leverancier ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Leverancier</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          <Field label="Naam">
-            <Input
-              value={form.supplierName}
-              onChange={(e) => set('supplierName', e.target.value)}
-            />
-          </Field>
-          <Field label="KVK-nummer">
-            <Input
-              value={form.supplierKvk}
-              placeholder="12345678"
-              onChange={(e) => set('supplierKvk', e.target.value)}
-            />
-          </Field>
-          <Field label="BTW-nummer">
-            <Input
-              value={form.supplierVatNumber}
-              placeholder="NL000000000B00"
-              onChange={(e) => set('supplierVatNumber', e.target.value)}
-            />
-          </Field>
-          <Field label="IBAN">
-            <Input
-              value={form.supplierIban}
-              placeholder="NL00BANK0000000000"
-              onChange={(e) => set('supplierIban', e.target.value)}
-            />
-          </Field>
-        </CardContent>
-      </Card>
+          <FieldSection title="Factuurgegevens">
+            <Field label="Factuurnummer">
+              <Input
+                className="h-9"
+                value={form.invoiceNumber}
+                onChange={(e) => set('invoiceNumber', e.target.value)}
+              />
+            </Field>
+            <Field label="Factuurdatum">
+              <Input
+                className="h-9"
+                type="date"
+                value={form.invoiceDate}
+                required
+                onChange={(e) => set('invoiceDate', e.target.value)}
+              />
+            </Field>
+            <Field label="Vervaldatum">
+              <Input
+                className="h-9"
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => set('dueDate', e.target.value)}
+              />
+            </Field>
+            <Field label="Peppol ontvanger">
+              <Input
+                className="h-9"
+                value={invoice.receiver?.participantId ?? ''}
+                placeholder="0106:12345678"
+                readOnly
+              />
+            </Field>
+          </FieldSection>
 
-      {/* ── Factuurgegevens ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Factuurgegevens</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          <Field label="Factuurnummer">
-            <Input
-              value={form.invoiceNumber}
-              onChange={(e) => set('invoiceNumber', e.target.value)}
-            />
-          </Field>
-          <Field label="Factuurdatum">
-            <Input
-              type="date"
-              value={form.invoiceDate}
-              required
-              onChange={(e) => set('invoiceDate', e.target.value)}
-            />
-          </Field>
-          <Field label="Vervaldatum">
-            <Input
-              type="date"
-              value={form.dueDate}
-              onChange={(e) => set('dueDate', e.target.value)}
-            />
-          </Field>
-          <Field label="Peppol ontvanger">
-            <Input
-              value={invoice.receiver?.participantId ?? ''}
-              placeholder="0106:12345678"
-              readOnly
-            />
-          </Field>
-        </CardContent>
-      </Card>
-
-      {/* ── Regels ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Factuurregels</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0">
-          {invoice.lines.length === 0 ? (
-            <div className="px-6 py-4 text-sm text-muted-foreground">
-              Geen regels geëxtraheerd.
+          <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-card">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+              <div>
+                <h3 className="text-sm font-bold tracking-tight text-foreground">Factuurregels</h3>
+                <p className="text-[11px] text-muted-foreground">Geëxtraheerde regels en totaaltelling.</p>
+              </div>
+              <div className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary">
+                {invoice.lines.length} regels
+              </div>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Omschrijving</TableHead>
-                  <TableHead className="text-right">Aantal</TableHead>
-                  <TableHead className="text-right">Stuksprijs</TableHead>
-                  <TableHead className="text-right">BTW</TableHead>
-                  <TableHead className="text-right">Totaal</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoice.lines.map((line) => (
-                  <TableRow key={line.id}>
-                    <TableCell className="text-sm">{line.description}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {line.quantity}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatMoney(line.unitPrice)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {line.vatRate}%
-                    </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">
-                      {formatMoney(line.lineTotal)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
 
-          <div className="space-y-1 border-t border-border px-6 pt-4">
-            <TotalRow label="Bedrag excl. BTW" value={formatMoney(invoice.subtotal)} />
-            <TotalRow label="BTW-bedrag" value={formatMoney(invoice.vatTotal)} />
-            <TotalRow label="Bedrag G-rekening" value={formatMoney(gAccountAmount)} />
-            <Separator className="my-1.5" />
-            <TotalRow
-              label="Bedrag incl. BTW"
-              value={formatMoney(invoice.totalAmount)}
-              emphasize
-            />
-          </div>
-        </CardContent>
-      </Card>
+            <div className="overflow-x-auto">
+              {invoice.lines.length === 0 ? (
+                <div className="px-4 py-4 text-sm text-muted-foreground">
+                  Geen regels geëxtraheerd.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Omschrijving</TableHead>
+                      <TableHead className="text-right">Aantal</TableHead>
+                      <TableHead className="text-right">Stuksprijs</TableHead>
+                      <TableHead className="text-right">BTW</TableHead>
+                      <TableHead className="text-right">Totaal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoice.lines.map((line) => (
+                      <TableRow key={line.id}>
+                        <TableCell className="min-w-[210px] text-sm">{line.description}</TableCell>
+                        <TableCell className="text-right tabular-nums">{line.quantity}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatMoney(line.unitPrice)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{line.vatRate}%</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          {formatMoney(line.lineTotal)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
 
-      {/* Save bar */}
+            <div className="space-y-1 border-t border-white/10 px-4 py-3">
+              <TotalRow label="Bedrag excl. BTW" value={formatMoney(invoice.subtotal)} />
+              <TotalRow label="BTW-bedrag" value={formatMoney(invoice.vatTotal)} />
+              <TotalRow label="Bedrag G-rekening" value={formatMoney(gAccountAmount)} />
+              <Separator className="my-1.5" />
+              <TotalRow label="Bedrag incl. BTW" value={formatMoney(invoice.totalAmount)} emphasize />
+            </div>
+          </section>
+        </div>
+      </div>
+
       {isDirty && (
-        <div className="sticky bottom-0 -mx-6 -mb-6 flex items-center justify-between gap-3 border-t border-border bg-card/95 px-6 py-3 shadow-elevated backdrop-blur">
-          <span className="text-sm text-muted-foreground">
-            Wijzigingen niet opgeslagen
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-              disabled={updateMutation.isPending}
-            >
-              Annuleren
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={updateMutation.isPending || !isDirty}
-            >
-              <Save className="h-3.5 w-3.5" />
-              {updateMutation.isPending ? 'Opslaan…' : 'Opslaan'}
-            </Button>
+        <div className="shrink-0 border-t border-white/10 bg-card/95 px-4 py-3 shadow-elevated backdrop-blur-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm font-medium text-muted-foreground">Wijzigingen niet opgeslagen</span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCancel}
+                disabled={updateMutation.isPending}
+              >
+                Annuleren
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={updateMutation.isPending || !isDirty}
+              >
+                <Save className="h-3.5 w-3.5" />
+                {updateMutation.isPending ? 'Opslaan…' : 'Opslaan'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -506,10 +508,40 @@ export function ExtractionFields({ invoice }: ExtractionFieldsProps) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+    <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-card">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold tracking-tight text-foreground">{title}</h3>
+          {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+      <Label className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </Label>
       {children}
@@ -527,13 +559,13 @@ function TotalRow({
   emphasize?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between text-sm">
+    <div className="flex items-center justify-between gap-4 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span
-        className={
-          'tabular-nums ' +
-          (emphasize ? 'text-base font-semibold text-foreground' : 'text-foreground')
-        }
+        className={cn(
+          'tabular-nums',
+          emphasize ? 'text-base font-bold text-foreground' : 'font-medium text-foreground',
+        )}
       >
         {value}
       </span>
