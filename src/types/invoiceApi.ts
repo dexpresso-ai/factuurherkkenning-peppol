@@ -35,6 +35,8 @@ export type RecognitionFieldKey =
   | 'gAccountAmount'
   | 'paymentReference'
   | 'debtorNumber'
+  | 'orderReference'
+  | 'buyerReference'
   | 'period'
   | 'periodYear'
   | 'paymentMethod';
@@ -62,6 +64,16 @@ export interface InvoiceRecognitionDto {
   paymentReference?: string;
   /** Debiteurnummer / klantnummer op de factuur. */
   debtorNumber?: string;
+  /**
+   * Verplichtingenummer / inkooporderreferentie.
+   * UBL mapping: cac:OrderReference/cbc:ID.
+   */
+  orderReference?: string;
+  /**
+   * Standaardroutenummer voor gemeentelijke routering.
+   * UBL mapping: cbc:BuyerReference.
+   */
+  buyerReference?: string;
   /** Herkende periode, bijv. "mei", "Q2" of "2026-05". */
   period: string;
   /** Jaar behorend bij de periode. */

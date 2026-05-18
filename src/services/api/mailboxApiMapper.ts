@@ -5,6 +5,8 @@ import type {
   MailboxMessageActionResult,
   MailboxMessageListFilters,
   MailboxMessageStatus,
+  MailboxManualDecision,
+  MailboxManualDecisionAction,
   MailboxPrevalidationDecision,
   MailboxPrevalidationOutcome,
   MailboxPrevalidationRuleCode,
@@ -38,6 +40,8 @@ export type MailboxMessageApiDto = Partial<MailboxMessage> & {
   totalAmount?: Money;
   invoiceId?: string;
   invoiceNumber?: string;
+  userDecision?: unknown;
+  reviewDecision?: unknown;
 };
 
 export type MailboxMessageListApiResponse =
@@ -205,6 +209,51 @@ function normalizePrevalidation(value: unknown, status: MailboxMessageStatus): M
   };
 }
 
+
+function normalizeManualDecision(value: unknown): MailboxManualDecision | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const rawAction = asOptionalString(value.action ?? value.decision ?? value.type)?.toLowerCase();
+  let action: MailboxManualDecisionAction | undefined;
+
+  if (rawAction === 'manual_reject' || rawAction === 'reject' || rawAction === 'rejected') {
+    action = 'manual_reject';
+  }
+
+  if (rawAction === 'override_accept' || rawAction === 'override' || rawAction === 'accept' || rawAction === 'accepted') {
+    action = 'override_accept';
+  }
+
+  if (!action) return undefined;
+
+  const previousOutcome = normalizeOutcome(value.previousOutcome);
+  const rawPreviousStatus = asOptionalString(value.previousStatus);
+  const allowedPreviousStatuses: MailboxMessageStatus[] = [
+    'new',
+    'accepted',
+    'manual_review',
+    'rejected',
+    'queued',
+    'processing',
+    'invoice_created',
+    'ignored',
+    'failed',
+  ];
+  const safePreviousStatus = rawPreviousStatus && allowedPreviousStatuses.includes(rawPreviousStatus as MailboxMessageStatus)
+    ? (rawPreviousStatus as MailboxMessageStatus)
+    : undefined;
+
+  return {
+    action,
+    decidedAt: asString(value.decidedAt ?? value.createdAt ?? value.updatedAt, new Date().toISOString()),
+    decidedBy: asOptionalString(value.decidedBy ?? value.userId),
+    decidedByName: asOptionalString(value.decidedByName ?? value.userName ?? value.displayName),
+    reason: asString(value.reason ?? value.comment ?? value.note, 'Geen reden meegegeven.'),
+    previousOutcome,
+    previousStatus: safePreviousStatus,
+  };
+}
+
 function getFromAddress(dto: MailboxMessageApiDto): string {
   const from = isRecord(dto.from) ? dto.from : undefined;
   const emailAddress = from && isRecord(from.emailAddress) ? from.emailAddress : undefined;
@@ -232,6 +281,7 @@ export function fromMailboxMessageApiDto(dto: MailboxMessageApiDto): MailboxMess
   const hasAttachments = asBoolean(dto.hasAttachments, attachmentCount > 0 || attachments.length > 0);
   const status = normalizeStatus(dto.status);
   const prevalidation = normalizePrevalidation(dto.prevalidation, status);
+  const manualDecision = normalizeManualDecision(dto.manualDecision ?? dto.userDecision ?? dto.reviewDecision);
 
   return {
     id: asString(dto.id ?? dto.mailboxMessageId ?? dto.graphMessageId ?? dto.providerMessageId, `mail-${Date.now()}`),
@@ -258,6 +308,7 @@ export function fromMailboxMessageApiDto(dto: MailboxMessageApiDto): MailboxMess
     linkedInvoiceId: asOptionalString(dto.linkedInvoiceId ?? dto.invoiceId),
     linkedInvoiceNumber: asOptionalString(dto.linkedInvoiceNumber ?? dto.invoiceNumber),
     prevalidation,
+    manualDecision,
     lastActionAt: asOptionalString(dto.lastActionAt),
     lastError: asOptionalString(dto.lastError),
   };

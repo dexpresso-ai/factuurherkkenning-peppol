@@ -18,12 +18,20 @@ import {
   Search,
   ShieldAlert,
   SlidersHorizontal,
+  UserCheck,
   XCircle,
 } from 'lucide-react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -33,13 +41,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import {
   Table,
   TableBody,
@@ -52,11 +53,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   useIgnoreMailboxMessage,
   useMailboxMessages,
+  useManualRejectMailboxMessage,
+  useOverrideMailboxMessage,
   usePrevalidateMailboxMessage,
   useProcessMailboxMessage,
   useSyncMailboxNow,
 } from '@/hooks/useFeatures';
 import type {
+  MailboxManualDecision,
   MailboxMessage,
   MailboxMessageListFilters,
   MailboxMessageStatus,
@@ -64,6 +68,16 @@ import type {
 } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatBytes, formatDateTime, formatMoney } from '@/utils/formatters';
+import {
+  canManualRejectMailboxMessage,
+  canOverrideMailboxMessage,
+  canProcessMailboxMessage,
+  getManualDecisionBlockReason,
+  getOverrideBlockReason,
+  hasHardTechnicalBlock,
+  isManuallyReleased,
+  isManuallyRejected,
+} from '@/utils/mailboxWorkflow';
 
 type MailboxStatusFilter = MailboxMessageStatus | 'all';
 type MailboxOutcomeFilter = MailboxPrevalidationOutcome | 'all';
@@ -73,14 +87,18 @@ interface MailboxActionHandlers {
   onPrevalidate: (id: string) => void;
   onProcess: (id: string) => void;
   onIgnore: (id: string) => void;
+  onManualReject: (id: string, reason: string) => void;
+  onOverride: (id: string, reason: string) => void;
 }
 
 const statusOptions: { value: MailboxStatusFilter; label: string }[] = [
   { value: 'all', label: 'Alle statussen' },
+  { value: 'new', label: 'Nieuw' },
   { value: 'accepted', label: 'Goedgekeurd' },
   { value: 'manual_review', label: 'Controle nodig' },
   { value: 'rejected', label: 'Afgekeurd' },
   { value: 'queued', label: 'In wachtrij' },
+  { value: 'processing', label: 'Verwerken' },
   { value: 'invoice_created', label: 'Factuur aangemaakt' },
   { value: 'ignored', label: 'Genegeerd' },
   { value: 'failed', label: 'Fout' },
@@ -135,7 +153,7 @@ function IntakeOutcomeBadge({ message }: { message: MailboxMessage }) {
     return (
       <Badge variant="success">
         <CheckCircle2 className="h-3 w-3" />
-        Vrijgegeven
+        Agent: vrijgegeven
       </Badge>
     );
   }
@@ -144,7 +162,7 @@ function IntakeOutcomeBadge({ message }: { message: MailboxMessage }) {
     return (
       <Badge variant="warning">
         <ShieldAlert className="h-3 w-3" />
-        Handmatige controle
+        Agent: controle nodig
       </Badge>
     );
   }
@@ -152,7 +170,27 @@ function IntakeOutcomeBadge({ message }: { message: MailboxMessage }) {
   return (
     <Badge variant="destructive">
       <XCircle className="h-3 w-3" />
-      Vooraf afgekeurd
+      Agent: afgekeurd
+    </Badge>
+  );
+}
+
+function ManualDecisionBadge({ decision }: { decision?: MailboxManualDecision }) {
+  if (!decision) return null;
+
+  if (decision.action === 'override_accept') {
+    return (
+      <Badge variant="success">
+        <UserCheck className="h-3 w-3" />
+        Overruled
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="destructive">
+      <Ban className="h-3 w-3" />
+      Handmatig afgekeurd
     </Badge>
   );
 }
@@ -178,6 +216,8 @@ export function MailboxPage() {
   const prevalidateMutation = usePrevalidateMailboxMessage();
   const ignoreMutation = useIgnoreMailboxMessage();
   const processMutation = useProcessMailboxMessage();
+  const manualRejectMutation = useManualRejectMailboxMessage();
+  const overrideMutation = useOverrideMailboxMessage();
 
   const messages = React.useMemo(() => data?.items ?? [], [data?.items]);
   const selectedMessage = React.useMemo(
@@ -185,7 +225,11 @@ export function MailboxPage() {
     [messages, selectedMessageId],
   );
   const isMutating =
-    prevalidateMutation.isPending || ignoreMutation.isPending || processMutation.isPending;
+    prevalidateMutation.isPending ||
+    ignoreMutation.isPending ||
+    processMutation.isPending ||
+    manualRejectMutation.isPending ||
+    overrideMutation.isPending;
 
   const actionHandlers = React.useMemo<MailboxActionHandlers>(
     () => ({
@@ -193,8 +237,10 @@ export function MailboxPage() {
       onPrevalidate: (id) => prevalidateMutation.mutate(id),
       onProcess: (id) => processMutation.mutate(id),
       onIgnore: (id) => ignoreMutation.mutate(id),
+      onManualReject: (id, reason) => manualRejectMutation.mutate({ id, dto: { reason } }),
+      onOverride: (id, reason) => overrideMutation.mutate({ id, dto: { reason } }),
     }),
-    [ignoreMutation, isMutating, prevalidateMutation, processMutation],
+    [ignoreMutation, isMutating, manualRejectMutation, overrideMutation, prevalidateMutation, processMutation],
   );
 
   const totals = React.useMemo(() => {
@@ -204,10 +250,10 @@ export function MailboxPage() {
         if (message.prevalidation?.outcome === 'accepted') acc.accepted += 1;
         if (message.prevalidation?.outcome === 'manual_review') acc.manual += 1;
         if (message.prevalidation?.outcome === 'rejected') acc.rejected += 1;
-        if (message.attachmentCount === 0) acc.withoutAttachment += 1;
+        if (message.manualDecision) acc.humanDecisions += 1;
         return acc;
       },
-      { total: 0, accepted: 0, manual: 0, rejected: 0, withoutAttachment: 0 },
+      { total: 0, accepted: 0, manual: 0, rejected: 0, humanDecisions: 0 },
     );
   }, [messages]);
 
@@ -223,7 +269,7 @@ export function MailboxPage() {
 
       <PageHeader
         title="Mailbox Intake"
-        description="Bekijk ingekomen mails los van factuurherkenning. De intake-agent keurt vooraf af waar dat kan, blokkeert ruis en zet alleen bruikbare mails door."
+        description="Bekijk ingekomen mails los van factuurherkenning. De intake-agent keurt vooraf af waar dat kan, maar de gebruiker kan elk besluit auditbaar corrigeren."
         actions={
           <Button
             onClick={() => syncMutation.mutate()}
@@ -245,7 +291,7 @@ export function MailboxPage() {
         <MailboxMetric
           label="Vrijgegeven"
           value={totals.accepted}
-          detail="mag door naar herkenning"
+          detail="agent vindt dit verwerkbaar"
           icon={CheckCircle2}
           tone="success"
         />
@@ -257,11 +303,11 @@ export function MailboxPage() {
           tone="warning"
         />
         <MailboxMetric
-          label="Vooraf afgekeurd"
-          value={totals.rejected}
-          detail={`${totals.withoutAttachment} zonder bijlage`}
-          icon={XCircle}
-          tone="destructive"
+          label="Menselijk besloten"
+          value={totals.humanDecisions}
+          detail={`${totals.rejected} vooraf afgekeurd`}
+          icon={UserCheck}
+          tone="default"
         />
       </section>
 
@@ -274,7 +320,7 @@ export function MailboxPage() {
                 Ingekomen mail
               </div>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                Alleen de belangrijkste kolommen staan in beeld. Klik op een mailregel om onderwerp, bijlagen, intake-uitleg en acties rechts te openen.
+                De tabel blijft bewust rustig. Klik op een mailregel voor de volledige reviewkaart, handmatige afkeur of override.
               </p>
             </div>
             <div className="grid gap-2 md:grid-cols-[minmax(14rem,1fr)_12rem_14rem_auto] xl:min-w-[48rem]">
@@ -354,7 +400,7 @@ export function MailboxPage() {
         )}
       </section>
 
-      <MailboxDetailsSheet
+      <MailboxDetailsDialog
         message={selectedMessage}
         open={Boolean(selectedMessage)}
         onOpenChange={(open) => {
@@ -424,7 +470,7 @@ function MailboxTable({
         <TableRow>
           <TableHead className="w-[11rem]">Ontvangen</TableHead>
           <TableHead>Afzender</TableHead>
-          <TableHead className="w-[13rem]">Status</TableHead>
+          <TableHead className="w-[14rem]">Status</TableHead>
           <TableHead className="w-[15rem]">Factuur koppeling</TableHead>
         </TableRow>
       </TableHeader>
@@ -457,8 +503,11 @@ function MailboxTable({
             </TableCell>
             <TableCell>
               <div className="flex flex-col items-start gap-2">
-                <MailboxStatusBadge status={message.status} />
-                {message.prevalidation?.outcome === 'manual_review' && (
+                <div className="flex flex-wrap gap-1.5">
+                  <MailboxStatusBadge status={message.status} />
+                  <ManualDecisionBadge decision={message.manualDecision} />
+                </div>
+                {message.prevalidation?.outcome === 'manual_review' && !isManuallyReleased(message) && (
                   <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-warning">
                     <EyeOff className="h-3 w-3" />
                     Details afgeschermd
@@ -496,7 +545,7 @@ function InvoiceLink({ message }: { message: MailboxMessage }) {
   );
 }
 
-function MailboxDetailsSheet({
+function MailboxDetailsDialog({
   message,
   open,
   onOpenChange,
@@ -507,190 +556,337 @@ function MailboxDetailsSheet({
   onOpenChange: (open: boolean) => void;
   actions: MailboxActionHandlers;
 }) {
+  const [decisionDraft, setDecisionDraft] = React.useState({ messageId: '', reason: '' });
+
   if (!message) {
-    return <Sheet open={open} onOpenChange={onOpenChange} />;
+    return <Dialog open={open} onOpenChange={onOpenChange} />;
   }
 
-  const canProcess = message.prevalidation?.outcome === 'accepted';
+  const manualReject = isManuallyRejected(message);
+  const canProcess = canProcessMailboxMessage(message);
+  const canOverride = canOverrideMailboxMessage(message);
+  const canManualReject = canManualRejectMailboxMessage(message);
+  const hardTechnicalBlock = hasHardTechnicalBlock(message);
   const routeHidden = message.prevalidation?.routeDisclosure === 'hidden_due_threshold';
   const firstFailedRule = message.prevalidation?.rules.find((rule) => !rule.passed);
+  const decisionReason = decisionDraft.messageId === message.id ? decisionDraft.reason : '';
+  const reasonIsValid = decisionReason.trim().length >= 6;
+  const manualDecisionBlockReason = getManualDecisionBlockReason(message);
+  const overrideBlockReason = getOverrideBlockReason(message);
+
+  const submitManualReject = () => {
+    if (!reasonIsValid || actions.isMutating) return;
+    actions.onManualReject(message.id, decisionReason);
+    setDecisionDraft({ messageId: message.id, reason: '' });
+  };
+
+  const submitOverride = () => {
+    if (!reasonIsValid || actions.isMutating) return;
+    actions.onOverride(message.id, decisionReason);
+    setDecisionDraft({ messageId: message.id, reason: '' });
+  };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[34rem]">
-        <div className="border-b border-white/10 p-5 pr-12">
-          <SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[min(86vh,58rem)] w-[calc(100vw-2rem)] max-w-6xl grid-rows-none flex-col gap-0 overflow-hidden rounded-[2rem] border-white/10 bg-card/95 p-0">
+        <div className="border-b border-white/10 bg-white/[0.025] p-5 pr-12 sm:p-6 sm:pr-14">
+          <DialogHeader>
             <div className="flex flex-wrap items-center gap-2">
               <MailboxStatusBadge status={message.status} />
               <IntakeOutcomeBadge message={message} />
+              <ManualDecisionBadge decision={message.manualDecision} />
             </div>
-            <SheetTitle className="mt-3">{message.subject}</SheetTitle>
-            <SheetDescription>
+            <DialogTitle className="mt-3 max-w-4xl text-2xl font-extrabold tracking-[-0.05em] sm:text-3xl">
+              {message.subject}
+            </DialogTitle>
+            <DialogDescription>
               {message.fromName ?? message.fromAddress} · {formatDateTime(message.receivedAt)}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
-          {routeHidden && (
-            <div className="rounded-3xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-              <div className="flex items-center gap-2 font-extrabold">
-                <EyeOff className="h-4 w-4" />
-                Route-informatie verborgen
-              </div>
-              <p className="mt-2 leading-relaxed text-warning/90">
-                Het totaalbedrag is hoger dan € 5.000. Route- of goedkeuringsnamen worden daarom niet getoond en deze mail vraagt handmatige controle.
-              </p>
-            </div>
-          )}
-
-          <DrawerSection title="Mailgegevens">
-            <DetailRow label="Ontvangen" value={formatDateTime(message.receivedAt)} />
-            <DetailRow label="Mailbox" value={message.mailboxAddress} />
-            <DetailRow label="Afzender" value={message.fromName ?? 'Onbekend'} />
-            <DetailRow label="E-mailadres" value={message.fromAddress} />
-            <DetailRow label="Geschat bedrag" value={formatMoney(message.estimatedTotalAmount)} strong />
-            {message.bodyPreview && (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Preview</div>
-                <p className="mt-2 text-sm leading-relaxed text-foreground/85">{message.bodyPreview}</p>
-              </div>
-            )}
-          </DrawerSection>
-
-          <DrawerSection title="Bijlagen">
-            <div className="flex flex-wrap gap-2">
-              {message.hasAttachments ? (
-                <>
-                  {message.pdfAttachmentCount > 0 && <Badge variant="default">PDF {message.pdfAttachmentCount}</Badge>}
-                  {message.xmlAttachmentCount > 0 && <Badge variant="info">XML {message.xmlAttachmentCount}</Badge>}
-                  {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount > 0 && (
-                    <Badge variant="muted">Overig {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount}</Badge>
-                  )}
-                </>
-              ) : (
-                <Badge variant="destructive">
-                  <XCircle className="h-3 w-3" />
-                  Geen bijlage
-                </Badge>
-              )}
-            </div>
-            {message.attachments.length > 0 && (
-              <div className="space-y-2">
-                {message.attachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 font-semibold text-foreground">
-                        <Paperclip className="h-4 w-4 shrink-0 text-primary" />
-                        <span className="truncate">{attachment.fileName}</span>
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {attachment.contentType} · {formatBytes(attachment.sizeBytes)}
-                      </div>
-                    </div>
-                    <Badge variant={attachment.isInvoiceCandidate ? 'success' : 'muted'}>
-                      {attachment.isInvoiceCandidate ? 'Kandidaat' : 'Ruis'}
-                    </Badge>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
+            <div className="space-y-5">
+              {routeHidden && (
+                <div className="rounded-3xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
+                  <div className="flex items-center gap-2 font-extrabold">
+                    <EyeOff className="h-4 w-4" />
+                    Route-informatie verborgen
                   </div>
-                ))}
-              </div>
-            )}
-          </DrawerSection>
-
-          <DrawerSection title="Intakebesluit">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <IntakeOutcomeBadge message={message} />
-                {firstFailedRule && <Badge variant="warning">Aandachtspunt</Badge>}
-              </div>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                {message.prevalidation?.summary ?? 'Deze mail is nog niet vooraf beoordeeld.'}
-              </p>
-            </div>
-            {message.prevalidation?.rules && message.prevalidation.rules.length > 0 && (
-              <div className="space-y-2">
-                {message.prevalidation.rules.map((rule) => (
-                  <div
-                    key={rule.code}
-                    className={cn(
-                      'rounded-2xl border p-3 text-sm',
-                      rule.passed
-                        ? 'border-success/20 bg-success/5 text-foreground/90'
-                        : rule.severity === 'warning'
-                          ? 'border-warning/30 bg-warning/10 text-warning'
-                          : 'border-destructive/25 bg-destructive/10 text-destructive',
-                    )}
-                  >
-                    <div className="flex items-start gap-2">
-                      {rule.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
-                      <div className="leading-relaxed">{rule.message}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </DrawerSection>
-
-          <DrawerSection title="Factuurkoppeling">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              {message.linkedInvoiceId ? (
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Gekoppelde factuur</div>
-                    <div className="mt-1 font-extrabold text-foreground">{message.linkedInvoiceNumber ?? message.linkedInvoiceId}</div>
-                  </div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/invoices/${message.linkedInvoiceId}`}>
-                      <FileText className="h-3.5 w-3.5" />
-                      Open
-                    </Link>
-                  </Button>
+                  <p className="mt-2 leading-relaxed text-warning/90">
+                    Het totaalbedrag is hoger dan € 5.000. Route- of goedkeuringsnamen worden niet getoond. Een gebruiker kan de mail wel auditbaar vrijgeven of afkeuren.
+                  </p>
                 </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">Nog niet gekoppeld aan een factuur.</div>
               )}
-            </div>
-          </DrawerSection>
 
-          <DrawerSection title="Techniek">
-            <DetailRow label="Message ID" value={message.graphMessageId || '—'} mono />
-            <DetailRow label="Immutable ID" value={message.graphImmutableMessageId ?? '—'} mono />
-            <DetailRow label="Conversation ID" value={message.conversationId ?? '—'} mono />
-            <DetailRow label="Laatste actie" value={message.lastActionAt ? formatDateTime(message.lastActionAt) : '—'} />
-            {message.lastError && <DetailRow label="Laatste fout" value={message.lastError} />}
-          </DrawerSection>
+              {hardTechnicalBlock && (
+                <div className="rounded-3xl border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">
+                  <div className="flex items-center gap-2 font-extrabold">
+                    <Ban className="h-4 w-4" />
+                    Harde technische blokkade
+                  </div>
+                  <p className="mt-2 leading-relaxed text-destructive/90">
+                    Er is geen verwerkbare PDF/XML-factuurbijlage gevonden. De gebruiker kan dit auditbaar afkeuren, maar niet veilig doorzetten naar factuurherkenning.
+                  </p>
+                </div>
+              )}
+
+              <DrawerSection title="Mailgegevens">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <DetailRow label="Ontvangen" value={formatDateTime(message.receivedAt)} />
+                  <DetailRow label="Mailbox" value={message.mailboxAddress} />
+                  <DetailRow label="Afzender" value={message.fromName ?? 'Onbekend'} />
+                  <DetailRow label="E-mailadres" value={message.fromAddress} />
+                  <DetailRow label="Geschat bedrag" value={formatMoney(message.estimatedTotalAmount)} strong />
+                  <DetailRow label="Bijlagen" value={`${message.attachmentCount} bestand(en)`} />
+                </div>
+                {message.bodyPreview && (
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Preview</div>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/85">{message.bodyPreview}</p>
+                  </div>
+                )}
+              </DrawerSection>
+
+              <DrawerSection title="Bijlagen">
+                <div className="flex flex-wrap gap-2">
+                  {message.hasAttachments ? (
+                    <>
+                      {message.pdfAttachmentCount > 0 && <Badge variant="default">PDF {message.pdfAttachmentCount}</Badge>}
+                      {message.xmlAttachmentCount > 0 && <Badge variant="info">XML {message.xmlAttachmentCount}</Badge>}
+                      {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount > 0 && (
+                        <Badge variant="muted">Overig {message.attachmentCount - message.pdfAttachmentCount - message.xmlAttachmentCount}</Badge>
+                      )}
+                    </>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3" />
+                      Geen bijlage
+                    </Badge>
+                  )}
+                </div>
+                {message.attachments.length > 0 && (
+                  <div className="space-y-2">
+                    {message.attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 font-semibold text-foreground">
+                            <Paperclip className="h-4 w-4 shrink-0 text-primary" />
+                            <span className="truncate">{attachment.fileName}</span>
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {attachment.contentType} · {formatBytes(attachment.sizeBytes)}
+                          </div>
+                        </div>
+                        <Badge variant={attachment.isInvoiceCandidate ? 'success' : 'muted'}>
+                          {attachment.isInvoiceCandidate ? 'Kandidaat' : 'Ruis'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DrawerSection>
+
+              <DrawerSection title="Factuurkoppeling">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                  {message.linkedInvoiceId ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Gekoppelde factuur</div>
+                        <div className="mt-1 font-extrabold text-foreground">{message.linkedInvoiceNumber ?? message.linkedInvoiceId}</div>
+                      </div>
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/invoices/${message.linkedInvoiceId}`}>
+                          <FileText className="h-3.5 w-3.5" />
+                          Open
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">Nog niet gekoppeld aan een factuur.</div>
+                  )}
+                </div>
+              </DrawerSection>
+            </div>
+
+            <aside className="space-y-5">
+              <DrawerSection title="Automatische intake">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <IntakeOutcomeBadge message={message} />
+                    {firstFailedRule && <Badge variant="warning">Aandachtspunt</Badge>}
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {message.prevalidation?.summary ?? 'Deze mail is nog niet vooraf beoordeeld.'}
+                  </p>
+                </div>
+                {message.prevalidation?.rules && message.prevalidation.rules.length > 0 && (
+                  <div className="space-y-2">
+                    {message.prevalidation.rules.map((rule) => (
+                      <div
+                        key={rule.code}
+                        className={cn(
+                          'rounded-2xl border p-3 text-sm',
+                          rule.passed
+                            ? 'border-success/20 bg-success/5 text-foreground/90'
+                            : rule.severity === 'warning'
+                              ? 'border-warning/30 bg-warning/10 text-warning'
+                              : 'border-destructive/25 bg-destructive/10 text-destructive',
+                        )}
+                      >
+                        <div className="flex items-start gap-2">
+                          {rule.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
+                          <div className="leading-relaxed">{rule.message}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DrawerSection>
+
+              <DrawerSection title="Menselijke beslissing">
+                <div className="rounded-3xl border border-primary/20 bg-primary/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+                      <UserCheck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-foreground">Gebruiker mag de agent overrulen</div>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                        Handmatige afkeur of vrijgave wordt als aparte beslissing opgeslagen en moet straks server-side auditbaar blijven.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {(manualDecisionBlockReason || overrideBlockReason) && (
+                  <div className="rounded-3xl border border-warning/30 bg-warning/10 p-4 text-sm leading-relaxed text-warning">
+                    <div className="font-extrabold">Reviewrestrictie</div>
+                    <p className="mt-1 text-warning/90">
+                      {overrideBlockReason ?? manualDecisionBlockReason}
+                    </p>
+                  </div>
+                )}
+
+                {message.manualDecision && (
+                  <ManualDecisionSummary decision={message.manualDecision} />
+                )}
+
+                <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                  <label htmlFor="manual-decision-reason" className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    Reden voor auditlog
+                  </label>
+                  <textarea
+                    id="manual-decision-reason"
+                    value={decisionReason}
+                    onChange={(event) => setDecisionDraft({ messageId: message.id, reason: event.target.value })}
+                    disabled={!canManualReject || actions.isMutating}
+                    placeholder="Bijvoorbeeld: leverancier bekend, PDF gecontroleerd, toch doorzetten naar herkenning…"
+                    className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-background/55 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Minimaal 6 tekens. Deze reden gaat mee naar de backend voor governance en audit.
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <Button
+                      variant="outline"
+                      disabled={!canOverride || !reasonIsValid || actions.isMutating}
+                      onClick={submitOverride}
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      Overrule & vrijgeven
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      disabled={!canManualReject || !reasonIsValid || actions.isMutating}
+                      onClick={submitManualReject}
+                    >
+                      <Ban className="h-4 w-4" />
+                      Handmatig afkeuren
+                    </Button>
+                  </div>
+                </div>
+              </DrawerSection>
+
+              <DrawerSection title="Techniek">
+                <DetailRow label="Message ID" value={message.graphMessageId || '—'} mono />
+                <DetailRow label="Immutable ID" value={message.graphImmutableMessageId ?? '—'} mono />
+                <DetailRow label="Conversation ID" value={message.conversationId ?? '—'} mono />
+                <DetailRow label="Laatste actie" value={message.lastActionAt ? formatDateTime(message.lastActionAt) : '—'} />
+                {message.lastError && <DetailRow label="Laatste fout" value={message.lastError} />}
+              </DrawerSection>
+            </aside>
+          </div>
         </div>
 
         <div className="border-t border-white/10 bg-card/95 p-4">
-          <div className="grid gap-2 sm:grid-cols-3">
-            <Button
-              variant="outline"
-              disabled={actions.isMutating}
-              onClick={() => actions.onPrevalidate(message.id)}
-            >
-              <RefreshCw className={cn('h-4 w-4', actions.isMutating && 'animate-spin')} />
-              Check
-            </Button>
-            <Button
-              disabled={!canProcess || actions.isMutating}
-              onClick={() => actions.onProcess(message.id)}
-            >
-              Verwerk
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={actions.isMutating || message.status === 'ignored'}
-              onClick={() => actions.onIgnore(message.id)}
-            >
-              Negeer
-            </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              {canProcess
+                ? 'Deze mail mag door naar factuurherkenning.'
+                : manualReject
+                  ? 'Deze mail is handmatig geblokkeerd.'
+                  : hardTechnicalBlock
+                    ? 'Deze mail mist een verwerkbare factuurbijlage.'
+                    : 'Deze mail is nog niet vrijgegeven voor verwerking.'}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Button
+                variant="outline"
+                disabled={actions.isMutating}
+                onClick={() => actions.onPrevalidate(message.id)}
+              >
+                <RefreshCw className={cn('h-4 w-4', actions.isMutating && 'animate-spin')} />
+                Check
+              </Button>
+              <Button
+                disabled={!canProcess || actions.isMutating}
+                onClick={() => actions.onProcess(message.id)}
+              >
+                Verwerk
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={actions.isMutating || message.status === 'ignored'}
+                onClick={() => actions.onIgnore(message.id)}
+              >
+                Negeer
+              </Button>
+            </div>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ManualDecisionSummary({ decision }: { decision: MailboxManualDecision }) {
+  const isOverride = decision.action === 'override_accept';
+  return (
+    <div
+      className={cn(
+        'rounded-3xl border p-4',
+        isOverride
+          ? 'border-success/25 bg-success/10'
+          : 'border-destructive/25 bg-destructive/10',
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <ManualDecisionBadge decision={decision} />
+        <span className="text-xs font-semibold text-muted-foreground">
+          {formatDateTime(decision.decidedAt)}
+        </span>
+      </div>
+      <div className="mt-3 text-sm leading-relaxed text-foreground/90">{decision.reason}</div>
+      <div className="mt-2 text-xs text-muted-foreground">
+        Besloten door {decision.decidedByName ?? decision.decidedBy ?? 'gebruiker'}
+        {decision.previousOutcome ? ` · vorig agentbesluit: ${decision.previousOutcome}` : ''}
+      </div>
+    </div>
   );
 }
 

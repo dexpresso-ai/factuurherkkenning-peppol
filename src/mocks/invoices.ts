@@ -16,6 +16,8 @@ export const mockInvoices: Invoice[] = [
     supplierIban: 'NL09INGB0000026969',
     invoiceDate: '2026-05-01',
     dueDate: '2026-05-31',
+    obligationNumber: 'VPL-2026-00481',
+    buyerReference: 'ROUTE-ICT-ABO',
     lines: [
       {
         id: 'l1',
@@ -71,6 +73,8 @@ export const mockInvoices: Invoice[] = [
     supplierIban: 'NL55INGB0670068728',
     invoiceDate: '2026-05-02',
     dueDate: '2026-06-01',
+    obligationNumber: 'VPL-2026-00492',
+    buyerReference: 'ROUTE-FAC-ENERGIE',
     lines: [
       {
         id: 'l1',
@@ -117,6 +121,8 @@ export const mockInvoices: Invoice[] = [
     supplierIban: 'NL47RABO0107199510',
     invoiceDate: '2026-05-06',
     dueDate: '2026-05-20',
+    obligationNumber: 'VPL-2026-01337',
+    buyerReference: 'ROUTE-ICT-HARDWARE',
     lines: [
       {
         id: 'l1',
@@ -178,6 +184,8 @@ export const mockInvoices: Invoice[] = [
     supplierIban: 'NL21INGB0009876543',
     invoiceDate: '2026-05-09',
     dueDate: '2026-06-08',
+    obligationNumber: 'VPL-2026-00552',
+    buyerReference: 'ROUTE-FAC-INKOOP',
     lines: [
       {
         id: 'l1',
@@ -240,6 +248,8 @@ export const mockInvoices: Invoice[] = [
     supplierIban: 'IE29AIBK93115212345678',
     invoiceDate: '2026-05-05',
     dueDate: '2026-06-04',
+    obligationNumber: 'VPL-2026-02284',
+    buyerReference: 'ROUTE-ICT-CLOUD',
     lines: [
       {
         id: 'l1',
@@ -338,6 +348,8 @@ export const mockInvoices: Invoice[] = [
     supplierIban: 'NL21INGB0009876543',
     invoiceDate: '2026-05-08',
     dueDate: '2026-06-07',
+    obligationNumber: 'VPL-2026-00553',
+    buyerReference: 'ROUTE-FAC-INKOOP',
     lines: [
       {
         id: 'l1',
@@ -392,6 +404,8 @@ export const mockInvoices: Invoice[] = [
     supplierIban: 'NL47RABO0107199510',
     invoiceDate: '2026-05-07',
     dueDate: '2026-05-21',
+    obligationNumber: 'VPL-2026-01340',
+    buyerReference: 'ROUTE-ICT-HARDWARE',
     lines: [
       {
         id: 'l1',

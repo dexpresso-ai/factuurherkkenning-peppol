@@ -83,6 +83,16 @@ export interface Invoice {
   paymentMethod?: string;
   /** Bedrag dat via een G-rekening betaald moet worden. */
   gAccountAmount?: Money;
+  /**
+   * Verplichtingenummer / inkooporderreferentie.
+   * UBL mapping: <cac:OrderReference><cbc:ID>...</cbc:ID></cac:OrderReference>.
+   */
+  obligationNumber?: string;
+  /**
+   * Standaardroutenummer / buyer reference voor routering bij de gemeente.
+   * UBL mapping: <cbc:BuyerReference>...</cbc:BuyerReference>.
+   */
+  buyerReference?: string;
 
   lines: InvoiceLine[];
 
@@ -126,6 +136,8 @@ export interface UpdateInvoiceDto {
   periodYear?: number;
   paymentMethod?: string;
   gAccountAmount?: Money;
+  obligationNumber?: string;
+  buyerReference?: string;
   subtotal?: Money;
   vatTotal?: Money;
   totalAmount?: Money;

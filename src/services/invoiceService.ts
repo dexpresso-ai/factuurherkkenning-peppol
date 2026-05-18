@@ -48,6 +48,8 @@ function applyFilters(items: Invoice[], filters: InvoiceListFilters): Invoice[] 
         (i.summaryDescription ?? '').toLowerCase().includes(q) ||
         (i.paymentReference ?? '').toLowerCase().includes(q) ||
         (i.debtorNumber ?? '').toLowerCase().includes(q) ||
+        (i.obligationNumber ?? '').toLowerCase().includes(q) ||
+        (i.buyerReference ?? '').toLowerCase().includes(q) ||
         (i.supplierKvk ?? '').toLowerCase().includes(q),
     );
   }

@@ -91,6 +91,18 @@ export function PdfPreview({ invoice }: PdfPreviewProps) {
               <div className="mt-0.5 font-medium text-slate-900">
                 {getInvoiceSummaryDescription(invoice)}
               </div>
+              {(invoice.obligationNumber || invoice.buyerReference) && (
+                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-200 pt-2 text-[9px]">
+                  <div>
+                    <div className="uppercase tracking-wider text-slate-400">Verplichting</div>
+                    <div className="mt-0.5 font-mono text-slate-700">{invoice.obligationNumber ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div className="uppercase tracking-wider text-slate-400">Route</div>
+                    <div className="mt-0.5 font-mono text-slate-700">{invoice.buyerReference ?? '—'}</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Lines */}

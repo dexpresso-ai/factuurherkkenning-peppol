@@ -11,10 +11,12 @@ import type {
   ValidationIssue,
 } from '@/types';
 import {
+  getBuyerReference,
   getGAccountAmount,
   getInvoicePeriod,
   getInvoicePeriodYear,
   getInvoiceSummaryDescription,
+  getObligationNumber,
   getPaymentMethod,
   normalizeInvoiceRecognitionFields,
 } from '@/utils/invoiceRecognition';
@@ -89,6 +91,8 @@ function normalizeApiRecognition(recognition: unknown): InvoiceRecognitionDto {
     paymentReference:
       typeof dto.paymentReference === 'string' ? dto.paymentReference : undefined,
     debtorNumber: typeof dto.debtorNumber === 'string' ? dto.debtorNumber : undefined,
+    orderReference: typeof dto.orderReference === 'string' ? dto.orderReference : undefined,
+    buyerReference: typeof dto.buyerReference === 'string' ? dto.buyerReference : undefined,
     period: typeof dto.period === 'string' ? dto.period : '',
     periodYear: getFiniteNumber(dto.periodYear, new Date().getFullYear()),
     paymentMethod:
@@ -115,6 +119,8 @@ export function toInvoiceRecognitionDto(invoice: Invoice): InvoiceRecognitionDto
     gAccountAmount: getGAccountAmount(normalized),
     paymentReference: normalized.paymentReference,
     debtorNumber: normalized.debtorNumber,
+    orderReference: getObligationNumber(normalized),
+    buyerReference: getBuyerReference(normalized),
     period: getInvoicePeriod(normalized),
     periodYear: getInvoicePeriodYear(normalized),
     paymentMethod: getPaymentMethod(normalized),
@@ -125,6 +131,8 @@ export function toInvoiceRecognitionDto(invoice: Invoice): InvoiceRecognitionDto
       { field: 'vatAmount', score: normalized.confidenceScore, source: 'azure_document_intelligence' },
       { field: 'amountIncludingVat', score: normalized.confidenceScore, source: 'azure_document_intelligence' },
       { field: 'gAccountAmount', score: 1, source: hadGAccountAmount ? 'azure_document_intelligence' : 'default' },
+      { field: 'orderReference', score: normalized.obligationNumber ? normalized.confidenceScore : 0, source: normalized.obligationNumber ? 'azure_document_intelligence' : 'default' },
+      { field: 'buyerReference', score: normalized.buyerReference ? normalized.confidenceScore : 0, source: normalized.buyerReference ? 'azure_document_intelligence' : 'default' },
       { field: 'paymentMethod', score: 1, source: hadPaymentMethod ? 'manual_correction' : 'default' },
     ],
   };
@@ -175,6 +183,8 @@ export function fromInvoiceApiDto(dto: InvoiceApiResponse): Invoice {
       summaryDescription: recognition.summaryDescription,
       paymentReference: recognition.paymentReference,
       debtorNumber: recognition.debtorNumber,
+      obligationNumber: recognition.orderReference,
+      buyerReference: recognition.buyerReference,
       period: recognition.period,
       periodYear: recognition.periodYear,
       paymentMethod: recognition.paymentMethod,
@@ -218,6 +228,8 @@ export function toInvoicePatchApiDto(dto: UpdateInvoiceApiInput): InvoicePatchAp
   if (dto.gAccountAmount !== undefined) recognition.gAccountAmount = dto.gAccountAmount;
   if (dto.paymentReference !== undefined) recognition.paymentReference = dto.paymentReference;
   if (dto.debtorNumber !== undefined) recognition.debtorNumber = dto.debtorNumber;
+  if (dto.obligationNumber !== undefined) recognition.orderReference = dto.obligationNumber;
+  if (dto.buyerReference !== undefined) recognition.buyerReference = dto.buyerReference;
   if (dto.period !== undefined) recognition.period = dto.period;
   if (dto.periodYear !== undefined) recognition.periodYear = dto.periodYear;
   if (dto.paymentMethod !== undefined) recognition.paymentMethod = dto.paymentMethod;

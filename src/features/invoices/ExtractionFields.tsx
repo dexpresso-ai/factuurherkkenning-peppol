@@ -41,6 +41,8 @@ interface ExtractionFormState {
   summaryDescription: string;
   paymentReference: string;
   debtorNumber: string;
+  obligationNumber: string;
+  buyerReference: string;
   paymentMethod: string;
   period: string;
   periodYear: string;
@@ -99,6 +101,8 @@ function buildFormState(invoice: Invoice): ExtractionFormState {
     summaryDescription: getInvoiceSummaryDescription(invoice),
     paymentReference: invoice.paymentReference ?? '',
     debtorNumber: invoice.debtorNumber ?? '',
+    obligationNumber: invoice.obligationNumber ?? '',
+    buyerReference: invoice.buyerReference ?? '',
     paymentMethod: getPaymentMethod(invoice),
     period: getInvoicePeriod(invoice),
     periodYear: String(getInvoicePeriodYear(invoice)),
@@ -150,6 +154,8 @@ function buildUpdateDto(invoice: Invoice, form: ExtractionFormState): UpdateInvo
   addTextPatch(patch, 'summaryDescription', form.summaryDescription, getInvoiceSummaryDescription(invoice));
   addTextPatch(patch, 'paymentReference', form.paymentReference, invoice.paymentReference ?? '');
   addTextPatch(patch, 'debtorNumber', form.debtorNumber, invoice.debtorNumber ?? '');
+  addTextPatch(patch, 'obligationNumber', form.obligationNumber, invoice.obligationNumber ?? '');
+  addTextPatch(patch, 'buyerReference', form.buyerReference, invoice.buyerReference ?? '');
   addTextPatch(patch, 'paymentMethod', form.paymentMethod, getPaymentMethod(invoice));
   addTextPatch(patch, 'period', form.period, getInvoicePeriod(invoice));
   addTextPatch(patch, 'supplierName', form.supplierName, invoice.supplierName);
@@ -287,6 +293,22 @@ export function ExtractionFields({ invoice }: ExtractionFieldsProps) {
                 value={form.debtorNumber}
                 placeholder="Klant- of debiteurnummer"
                 onChange={(e) => set('debtorNumber', e.target.value)}
+              />
+            </Field>
+            <Field label="Verplichtingenummer" helper="UBL: cac:OrderReference/cbc:ID">
+              <Input
+                className="h-9"
+                value={form.obligationNumber}
+                placeholder="Bijv. VPL-2026-0412"
+                onChange={(e) => set('obligationNumber', e.target.value)}
+              />
+            </Field>
+            <Field label="Standaardroutenummer" helper="UBL: cbc:BuyerReference">
+              <Input
+                className="h-9"
+                value={form.buyerReference}
+                placeholder="Bijv. ROUTE-FIN-01"
+                onChange={(e) => set('buyerReference', e.target.value)}
               />
             </Field>
             <Field label="Periode">
@@ -532,18 +554,23 @@ function FieldSection({
 
 function Field({
   label,
+  helper,
   children,
   className,
 }: {
   label: string;
+  helper?: string;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
-      <Label className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </Label>
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <Label className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
+          {label}
+        </Label>
+        {helper && <span className="shrink-0 text-[9px] font-medium text-muted-foreground/70">{helper}</span>}
+      </div>
       {children}
     </div>
   );

@@ -135,6 +135,14 @@ export function getGAccountAmount(invoice: Invoice): Money {
   return invoice.gAccountAmount || createZeroMoney(invoice);
 }
 
+export function getObligationNumber(invoice: Invoice): string | undefined {
+  return invoice.obligationNumber?.trim() || undefined;
+}
+
+export function getBuyerReference(invoice: Invoice): string | undefined {
+  return invoice.buyerReference?.trim() || undefined;
+}
+
 export function normalizeInvoiceRecognitionFields(invoice: Invoice): Invoice {
   const period = getInvoicePeriod(invoice);
   const paymentReference =
@@ -149,5 +157,7 @@ export function normalizeInvoiceRecognitionFields(invoice: Invoice): Invoice {
     periodYear: getInvoicePeriodYear(invoice),
     paymentMethod: getPaymentMethod(invoice),
     gAccountAmount: getGAccountAmount(invoice),
+    obligationNumber: getObligationNumber(invoice),
+    buyerReference: getBuyerReference(invoice),
   };
 }

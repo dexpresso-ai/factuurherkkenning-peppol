@@ -15,7 +15,12 @@ import { dashboardService } from '@/services/dashboardService';
 import { supplierService } from '@/services/supplierService';
 import { settingsService } from '@/services/settingsService';
 import { auditService } from '@/services/auditService';
-import { mailboxService, type ConnectMailboxDto, type SyncMailboxResult } from '@/services/mailboxService';
+import {
+  mailboxService,
+  type ConnectMailboxDto,
+  type MailboxManualActionDto,
+  type SyncMailboxResult,
+} from '@/services/mailboxService';
 import { queryKeys } from '@/services/api/queryKeys';
 
 /* -------- Dashboard -------- */
@@ -101,6 +106,22 @@ export function useIgnoreMailboxMessage() {
   const qc = useQueryClient();
   return useMutation<MailboxMessageActionResult, Error, string>({
     mutationFn: (id) => mailboxService.ignoreMessage(id),
+    onSuccess: (data) => invalidateMailboxViews(qc, data.message),
+  });
+}
+
+export function useManualRejectMailboxMessage() {
+  const qc = useQueryClient();
+  return useMutation<MailboxMessageActionResult, Error, { id: string; dto: MailboxManualActionDto }>({
+    mutationFn: ({ id, dto }) => mailboxService.manualRejectMessage(id, dto),
+    onSuccess: (data) => invalidateMailboxViews(qc, data.message),
+  });
+}
+
+export function useOverrideMailboxMessage() {
+  const qc = useQueryClient();
+  return useMutation<MailboxMessageActionResult, Error, { id: string; dto: MailboxManualActionDto }>({
+    mutationFn: ({ id, dto }) => mailboxService.overrideMessage(id, dto),
     onSuccess: (data) => invalidateMailboxViews(qc, data.message),
   });
 }

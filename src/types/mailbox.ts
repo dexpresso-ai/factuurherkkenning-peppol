@@ -66,6 +66,18 @@ export interface MailboxPrevalidationDecision {
   routeDisclosure: 'visible' | 'hidden_due_threshold' | 'not_applicable';
 }
 
+export type MailboxManualDecisionAction = 'manual_reject' | 'override_accept';
+
+export interface MailboxManualDecision {
+  action: MailboxManualDecisionAction;
+  decidedAt: string;
+  decidedBy?: string;
+  decidedByName?: string;
+  reason: string;
+  previousOutcome?: MailboxPrevalidationOutcome;
+  previousStatus?: MailboxMessageStatus;
+}
+
 export interface MailboxMessage {
   id: string;
   graphMessageId: string;
@@ -93,6 +105,8 @@ export interface MailboxMessage {
   linkedInvoiceId?: string;
   linkedInvoiceNumber?: string;
   prevalidation?: MailboxPrevalidationDecision;
+  /** Menselijke beslissing bovenop de automatische intake. Backend moet deze auditbaar opslaan. */
+  manualDecision?: MailboxManualDecision;
   lastActionAt?: string;
   lastError?: string;
 }

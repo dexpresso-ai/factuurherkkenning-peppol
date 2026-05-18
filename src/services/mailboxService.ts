@@ -9,6 +9,18 @@ import { mockDashboardSummary } from '@/mocks/dashboard';
 import { mockMailboxMessages, prevalidateMailboxMessage } from '@/mocks/mailbox';
 import { apiCall } from './api/apiClient';
 import {
+  canManualRejectMailboxMessage,
+  canOverrideMailboxMessage,
+  canProcessMailboxMessage,
+  getManualDecisionBlockReason,
+  getMailboxProcessBlockReason,
+  getOverrideBlockReason,
+  hasHardTechnicalBlock,
+  isMailboxInFlightOrTerminal,
+  isManuallyReleased,
+  isManuallyRejected,
+} from '@/utils/mailboxWorkflow';
+import {
   fromMailboxActionResultApiDto,
   fromMailboxMessageApiDto,
   fromMailboxMessageListApiDto,
@@ -27,6 +39,12 @@ export interface SyncMailboxResult {
   started: boolean;
   message: string;
   correlationId: string;
+}
+
+export interface MailboxManualActionDto {
+  reason: string;
+  decidedBy?: string;
+  decidedByName?: string;
 }
 
 const mailboxStore: MailboxMessage[] = structuredClone(mockMailboxMessages);
@@ -75,6 +93,14 @@ function replaceMessage(id: string, next: MailboxMessage): MailboxMessage {
   if (idx === -1) throw new Error('Mailbericht niet gevonden');
   mailboxStore[idx] = next;
   return next;
+}
+
+function normalizeManualReason(reason: string): string {
+  const clean = reason.trim();
+  if (clean.length < 6) {
+    throw new Error('Geef een korte reden mee voor auditlogging.');
+  }
+  return clean;
 }
 
 export const mailboxService = {
@@ -159,14 +185,20 @@ export const mailboxService = {
         const now = new Date().toISOString();
         const { prevalidation: _previousPrevalidation, ...messageForValidation } = current;
         const prevalidation = prevalidateMailboxMessage(messageForValidation, now);
-        const nextStatus =
-          prevalidation.outcome === 'rejected'
+        const messageWithPrevalidation = { ...current, prevalidation };
+        const nextStatus = isMailboxInFlightOrTerminal(current)
+          ? current.status
+          : isManuallyRejected(current)
             ? 'rejected'
-            : prevalidation.outcome === 'manual_review'
-              ? 'manual_review'
-              : current.status === 'new'
-                ? 'accepted'
-                : current.status;
+            : isManuallyReleased(current) && !hasHardTechnicalBlock(messageWithPrevalidation)
+              ? 'accepted'
+              : prevalidation.outcome === 'rejected'
+                ? 'rejected'
+                : prevalidation.outcome === 'manual_review'
+                  ? 'manual_review'
+                  : current.status === 'new'
+                    ? 'accepted'
+                    : current.status;
         const message = replaceMessage(id, {
           ...current,
           status: nextStatus,
@@ -211,6 +243,88 @@ export const mailboxService = {
     return fromMailboxActionResultApiDto(result);
   },
 
+  /** POST /api/mailbox/messages/:id/manual-reject */
+  async manualRejectMessage(id: string, dto: MailboxManualActionDto): Promise<MailboxMessageActionResult> {
+    const result = await apiCall<MailboxMessageActionResultApiDto>(
+      `/api/mailbox/messages/${id}/manual-reject`,
+      () => {
+        const current = findMessageOrThrow(id);
+        const now = new Date().toISOString();
+        const reason = normalizeManualReason(dto.reason);
+        if (!canManualRejectMailboxMessage(current)) {
+          throw new Error(getManualDecisionBlockReason(current) ?? 'Deze mail kan niet handmatig worden afgekeurd.');
+        }
+        const prevalidation = current.prevalidation ?? prevalidateMailboxMessage(current, now);
+        const message = replaceMessage(id, {
+          ...current,
+          status: 'rejected',
+          prevalidation,
+          manualDecision: {
+            action: 'manual_reject',
+            decidedAt: now,
+            decidedBy: dto.decidedBy ?? 'current-user',
+            decidedByName: dto.decidedByName ?? 'Gebruiker',
+            reason,
+            previousOutcome: prevalidation.outcome,
+            previousStatus: current.status,
+          },
+          lastActionAt: now,
+          lastError: undefined,
+        });
+        return {
+          message: structuredClone(message),
+          resultMessage: 'Mail handmatig afgekeurd en geblokkeerd voor verwerking.',
+          correlationId: `mail-manual-reject-${Date.now()}`,
+        };
+      },
+      { method: 'POST', body: dto },
+      { delay: [250, 550] },
+    );
+
+    return fromMailboxActionResultApiDto(result);
+  },
+
+  /** POST /api/mailbox/messages/:id/override-accept */
+  async overrideMessage(id: string, dto: MailboxManualActionDto): Promise<MailboxMessageActionResult> {
+    const result = await apiCall<MailboxMessageActionResultApiDto>(
+      `/api/mailbox/messages/${id}/override-accept`,
+      () => {
+        const current = findMessageOrThrow(id);
+        const now = new Date().toISOString();
+        const reason = normalizeManualReason(dto.reason);
+        if (!canOverrideMailboxMessage(current)) {
+          throw new Error(getOverrideBlockReason(current) ?? 'Deze mail kan niet veilig worden vrijgegeven.');
+        }
+        const prevalidation = current.prevalidation ?? prevalidateMailboxMessage(current, now);
+        const message = replaceMessage(id, {
+          ...current,
+          status: 'accepted',
+          prevalidation,
+          manualDecision: {
+            action: 'override_accept',
+            decidedAt: now,
+            decidedBy: dto.decidedBy ?? 'current-user',
+            decidedByName: dto.decidedByName ?? 'Gebruiker',
+            reason,
+            previousOutcome: prevalidation.outcome,
+            previousStatus: current.status,
+          },
+          lastActionAt: now,
+          lastError: undefined,
+        });
+        return {
+          message: structuredClone(message),
+          resultMessage: 'Automatisch intakebesluit overruled; mail is handmatig vrijgegeven.',
+          correlationId: `mail-override-${Date.now()}`,
+        };
+      },
+      { method: 'POST', body: dto },
+      { delay: [250, 550] },
+    );
+
+    return fromMailboxActionResultApiDto(result);
+  },
+
   /** POST /api/mailbox/messages/:id/process */
   async processMessage(id: string): Promise<MailboxMessageActionResult> {
     const result = await apiCall<MailboxMessageActionResultApiDto>(
@@ -218,17 +332,28 @@ export const mailboxService = {
       () => {
         const current = findMessageOrThrow(id);
         const prevalidation = current.prevalidation ?? prevalidateMailboxMessage(current);
-        if (prevalidation.outcome !== 'accepted') {
+        const messageForDecision = { ...current, prevalidation };
+        if (!canProcessMailboxMessage(messageForDecision)) {
+          const blockReason = getMailboxProcessBlockReason(messageForDecision);
+          const blockedStatus =
+            current.status === 'ignored' ||
+            current.status === 'queued' ||
+            current.status === 'processing' ||
+            current.status === 'invoice_created'
+              ? current.status
+              : isManuallyRejected(current) || prevalidation.outcome === 'rejected'
+                ? 'rejected'
+                : 'manual_review';
           const message = replaceMessage(id, {
             ...current,
             prevalidation,
-            status: prevalidation.outcome === 'rejected' ? 'rejected' : 'manual_review',
-            lastError: 'Mail is niet vrijgegeven voor automatische verwerking.',
+            status: blockedStatus,
+            lastError: blockReason,
             lastActionAt: new Date().toISOString(),
           });
           return {
             message: structuredClone(message),
-            resultMessage: 'Niet verwerkt: eerst handmatige controle nodig.',
+            resultMessage: `Niet verwerkt: ${blockReason}`,
             correlationId: `mail-process-blocked-${Date.now()}`,
           };
         }

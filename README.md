@@ -240,9 +240,21 @@ De herkenningsvelden worden naar de backend gestuurd als:
     "gAccountAmount": { "amount": 0, "currency": "EUR" },
     "paymentReference": "F-2026-0481",
     "debtorNumber": "123456",
+    "orderReference": "VPL-2026-00481",
+    "buyerReference": "ROUTE-ICT-ABO",
     "period": "mei",
     "periodYear": 2026,
     "paymentMethod": "Bankoverschrijving"
   }
 }
 ```
+
+
+### UBL-routeringsvelden
+
+De factuurherkenning bevat nu ook de velden voor UBL-routering:
+
+- `recognition.orderReference` — verplichtingenummer / inkooporderreferentie. Wordt later gemapt naar `<cac:OrderReference><cbc:ID>...</cbc:ID></cac:OrderReference>`.
+- `recognition.buyerReference` — standaardroutenummer. Wordt later gemapt naar `<cbc:BuyerReference>...</cbc:BuyerReference>`.
+
+Zie ook `docs/UBL_REFERENCE_FIELDS_2026-05-18.md`.
