@@ -1,4 +1,4 @@
-import type { InvoiceListFilters } from '@/types';
+import type { InvoiceListFilters, MailboxMessageListFilters } from '@/types';
 
 /**
  * Centrale registry van React Query-keys.
@@ -22,7 +22,10 @@ export const queryKeys = {
   },
 
   mailbox: {
+    all: ['mailbox'] as const,
     status: ['mailbox', 'status'] as const,
+    messages: (filters: MailboxMessageListFilters) => ['mailbox', 'messages', filters] as const,
+    message: (id: string) => ['mailbox', 'message', id] as const,
   },
 
   settings: ['settings'] as const,

@@ -6,6 +6,10 @@ import type {
   Supplier,
   UpdateSettingsDto,
   MailboxStatus,
+  MailboxMessage,
+  MailboxMessageActionResult,
+  MailboxMessageListFilters,
+  PagedResult,
 } from '@/types';
 import { dashboardService } from '@/services/dashboardService';
 import { supplierService } from '@/services/supplierService';
@@ -59,6 +63,56 @@ export function useMailboxStatus() {
   });
 }
 
+
+export function useMailboxMessages(filters: MailboxMessageListFilters = {}) {
+  return useQuery<PagedResult<MailboxMessage>>({
+    queryKey: queryKeys.mailbox.messages(filters),
+    queryFn: () => mailboxService.listMessages(filters),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useMailboxMessage(id: string | undefined) {
+  return useQuery<MailboxMessage>({
+    queryKey: queryKeys.mailbox.message(id ?? ''),
+    queryFn: () => mailboxService.getMessage(id!),
+    enabled: Boolean(id),
+  });
+}
+
+function invalidateMailboxViews(qc: ReturnType<typeof useQueryClient>, message?: MailboxMessage) {
+  qc.invalidateQueries({ queryKey: queryKeys.mailbox.all });
+  qc.invalidateQueries({ queryKey: queryKeys.dashboard });
+  qc.invalidateQueries({ queryKey: queryKeys.invoices.all });
+  if (message) {
+    qc.setQueryData(queryKeys.mailbox.message(message.id), message);
+  }
+}
+
+export function usePrevalidateMailboxMessage() {
+  const qc = useQueryClient();
+  return useMutation<MailboxMessageActionResult, Error, string>({
+    mutationFn: (id) => mailboxService.prevalidateMessage(id),
+    onSuccess: (data) => invalidateMailboxViews(qc, data.message),
+  });
+}
+
+export function useIgnoreMailboxMessage() {
+  const qc = useQueryClient();
+  return useMutation<MailboxMessageActionResult, Error, string>({
+    mutationFn: (id) => mailboxService.ignoreMessage(id),
+    onSuccess: (data) => invalidateMailboxViews(qc, data.message),
+  });
+}
+
+export function useProcessMailboxMessage() {
+  const qc = useQueryClient();
+  return useMutation<MailboxMessageActionResult, Error, string>({
+    mutationFn: (id) => mailboxService.processMessage(id),
+    onSuccess: (data) => invalidateMailboxViews(qc, data.message),
+  });
+}
+
 export function useConnectMailbox() {
   const qc = useQueryClient();
   return useMutation<MailboxStatus, Error, ConnectMailboxDto>({
@@ -78,6 +132,7 @@ export function useSyncMailboxNow() {
       qc.invalidateQueries({ queryKey: queryKeys.mailbox.status });
       qc.invalidateQueries({ queryKey: queryKeys.dashboard });
       qc.invalidateQueries({ queryKey: queryKeys.invoices.all });
+      qc.invalidateQueries({ queryKey: queryKeys.mailbox.all });
     },
   });
 }

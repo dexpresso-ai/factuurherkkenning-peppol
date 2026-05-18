@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
+  MailCheck,
   AlertTriangle,
   Building2,
   ClipboardList,
@@ -26,6 +27,7 @@ interface SidebarProps {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/mailbox', label: 'Mailbox', icon: MailCheck },
   { to: '/invoices', label: 'Facturen', icon: FileText },
   { to: '/exceptions', label: 'Uitval', icon: AlertTriangle },
   { to: '/suppliers', label: 'Leveranciers', icon: Building2 },

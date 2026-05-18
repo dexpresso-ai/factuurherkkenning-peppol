@@ -3,6 +3,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { InvoicesPage } from '@/pages/InvoicesPage';
+import { MailboxPage } from '@/pages/MailboxPage';
 import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage';
 import { ExceptionsPage } from '@/pages/ExceptionsPage';
 import { SuppliersPage } from '@/pages/SuppliersPage';
@@ -23,6 +24,7 @@ export function AppRoutes() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route path="/mailbox" element={<MailboxPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
         <Route path="/exceptions" element={<ExceptionsPage />} />

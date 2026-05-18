@@ -150,12 +150,12 @@ function PeppolAccessAgentHero({ automationRate, queue }: { automationRate: numb
           </div>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild>
-              <Link to="/invoices">
-                Bekijk facturen <ArrowRight className="h-4 w-4" />
+              <Link to="/mailbox">
+                Bekijk mailbox <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/exceptions">Controleer uitval</Link>
+              <Link to="/invoices">Bekijk facturen</Link>
             </Button>
           </div>
         </div>
