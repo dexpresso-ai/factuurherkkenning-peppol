@@ -4,16 +4,16 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-bold tracking-tight transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 motion-safe:hover:-translate-y-0.5',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-bold tracking-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 motion-safe:hover:-translate-y-0.5',
   {
     variants: {
       variant: {
         default:
-          'border border-primary/30 bg-primary text-primary-foreground shadow-soft hover:shadow-glow hover:brightness-105',
+          'border border-primary/30 bg-primary text-primary-foreground shadow-soft hover:shadow-[0_0_0_5px_hsl(var(--primary)/0.12),0_24px_56px_hsl(var(--primary)/0.22)] hover:brightness-105',
         destructive:
           'bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90 hover:shadow-elevated',
         outline:
-          'border border-white/10 bg-white/[0.04] text-foreground shadow-card backdrop-blur hover:border-primary/45 hover:bg-primary/10 hover:text-primary',
+          'border border-white/10 bg-white/[0.045] text-foreground shadow-card backdrop-blur hover:border-primary/45 hover:bg-white/[0.08] hover:text-primary',
         secondary:
           'border border-white/10 bg-secondary/85 text-secondary-foreground shadow-card hover:bg-secondary',
         ghost:

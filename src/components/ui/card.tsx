@@ -8,8 +8,8 @@ export const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'glass-panel relative overflow-hidden rounded-3xl text-card-foreground transition-all duration-300',
-      'before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent',
+      'brand-panel relative overflow-hidden rounded-[26px] text-card-foreground transition-all duration-300',
+      'hover:border-primary/28 hover:bg-primary/[0.018]',
       className,
     )}
     {...props}
@@ -23,7 +23,7 @@ export const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex flex-col gap-1.5 p-6', className)}
+    className={cn('relative z-10 flex flex-col gap-1.5 p-6', className)}
     {...props}
   />
 ));
@@ -36,7 +36,7 @@ export const CardTitle = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'text-base font-semibold leading-tight tracking-tight text-foreground',
+      'text-base font-extrabold leading-tight tracking-[-0.04em] text-foreground',
       className,
     )}
     {...props}
@@ -60,7 +60,7 @@ export const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+  <div ref={ref} className={cn('relative z-10 p-6 pt-0', className)} {...props} />
 ));
 CardContent.displayName = 'CardContent';
 
@@ -70,7 +70,7 @@ export const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center p-6 pt-0', className)}
+    className={cn('relative z-10 flex items-center p-6 pt-0', className)}
     {...props}
   />
 ));

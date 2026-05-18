@@ -22,7 +22,7 @@ export function PageHeader({
           <Sparkles className="h-3 w-3" />
           Peppol Access Agent
         </div>
-        <h1 className="gradient-text truncate text-3xl font-extrabold leading-[0.98] tracking-[-0.055em] lg:text-5xl">
+        <h1 className="gradient-text truncate text-[clamp(2rem,4vw,3.9rem)] font-extrabold leading-[0.95] tracking-[-0.07em]">
           {title}
         </h1>
         {description && (

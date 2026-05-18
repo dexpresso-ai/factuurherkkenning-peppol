@@ -4,46 +4,45 @@
 
 @layer base {
   :root {
-    /* Peppol Access Agent dark premium theme */
-    --background: 0 0% 3%;
-    --foreground: 0 0% 96%;
+    /* Branding overgenomen uit de hoofdwebsite: zwart, off-white, goud/oranje accent */
+    --background: 0 0% 4.3%;          /* #0b0b0b */
+    --foreground: 0 0% 96.1%;         /* #f5f5f5 */
 
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 96%;
+    --card: 0 0% 7.1%;                /* #121212 */
+    --card-foreground: 0 0% 96.1%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 0 0% 7.1%;
+    --popover-foreground: 0 0% 96.1%;
 
-    /* #FFBD59 */
-    --primary: 36 100% 67%;
-    --primary-foreground: 0 0% 7%;
+    --primary: 36 100% 67.5%;         /* #ffbd59 */
+    --primary-foreground: 0 0% 6.7%;
 
-    --secondary: 0 0% 11%;
+    --secondary: 0 0% 10.2%;
     --secondary-foreground: 0 0% 94%;
 
     --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 74%;
+    --muted-foreground: 0 0% 74.1%;   /* #bdbdbd */
 
-    --accent: 36 100% 67%;
-    --accent-foreground: 0 0% 7%;
+    --accent: 36 100% 67.5%;
+    --accent-foreground: 0 0% 6.7%;
 
-    --destructive: 0 92% 74%;
-    --destructive-foreground: 0 0% 7%;
+    --destructive: 0 100% 74.1%;
+    --destructive-foreground: 0 0% 6.7%;
 
     --success: 142 72% 54%;
     --success-foreground: 0 0% 7%;
 
-    --warning: 36 100% 67%;
+    --warning: 36 100% 67.5%;
     --warning-foreground: 0 0% 7%;
 
-    --info: 36 100% 67%;
+    --info: 36 100% 67.5%;
     --info-foreground: 0 0% 7%;
 
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 36 100% 67%;
+    --border: 0 0% 100% / 0.11;
+    --input: 0 0% 100% / 0.11;
+    --ring: 36 100% 67.5%;
 
-    --radius: 1.35rem;
+    --radius: 1.625rem;
   }
 
   * {
@@ -61,19 +60,20 @@
     color-scheme: dark;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 0.9) hsl(var(--background));
+    scrollbar-color: hsl(var(--primary) / 0.9) hsl(0 0% 4%);
+    background: #000000;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     min-width: 320px;
-    font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+    font-family: 'Poppins', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     text-rendering: geometricPrecision;
     background:
-      radial-gradient(circle at 18% 12%, hsl(var(--primary) / 0.16), transparent 34rem),
-      radial-gradient(circle at 82% 8%, hsl(var(--primary) / 0.08), transparent 28rem),
-      radial-gradient(circle at 50% 0%, hsl(0 0% 100% / 0.075), transparent 24rem),
+      radial-gradient(circle at 18% 12%, rgba(255, 189, 89, 0.14), transparent 34rem),
+      radial-gradient(circle at 82% 8%, rgba(255, 189, 89, 0.08), transparent 28rem),
       linear-gradient(180deg, #070707 0%, #0b0b0b 42%, #050505 100%);
   }
 
@@ -84,10 +84,27 @@
     pointer-events: none;
     z-index: -2;
     background-image:
-      linear-gradient(hsl(0 0% 100% / 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 0% 100% / 0.035) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
     background-size: 72px 72px;
     mask-image: radial-gradient(circle at top, black 0%, transparent 70%);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08), transparent 22rem),
+      radial-gradient(circle at 90% 55%, rgba(255, 189, 89, 0.055), transparent 30rem);
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.055em;
   }
 
   ::selection {
@@ -101,13 +118,13 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    background: #050505;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, hsl(var(--primary) / 0.92), hsl(var(--primary) / 0.52));
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.95), hsl(var(--primary) / 0.48));
     border-radius: 999px;
-    border: 3px solid hsl(var(--background));
+    border: 3px solid #050505;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -118,13 +135,32 @@
 @layer components {
   .glass-panel {
     @apply border border-white/10 bg-card/80 shadow-card backdrop-blur-2xl;
-    background-image:
-      radial-gradient(circle at 72% 18%, hsl(var(--primary) / 0.08), transparent 32%),
-      linear-gradient(145deg, hsl(0 0% 100% / 0.07), hsl(0 0% 100% / 0.018));
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.073), rgba(255, 255, 255, 0.02)),
+      rgba(18, 18, 18, 0.82);
+  }
+
+  .brand-panel {
+    @apply relative overflow-hidden border border-white/10 bg-card/80 shadow-card backdrop-blur-2xl;
+    background:
+      radial-gradient(circle at 78% 18%, hsl(var(--primary) / 0.11), transparent 32%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.073), rgba(255, 255, 255, 0.022)),
+      rgba(18, 18, 18, 0.82);
+  }
+
+  .brand-panel::before {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/55 to-transparent;
+  }
+
+  .brand-panel::after {
+    content: '';
+    @apply pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-primary/10 blur-3xl;
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent;
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg, #ffffff 0%, #fffaf2 58%, #ffbd59 100%);
   }
 
   .dx-eyebrow {
@@ -137,14 +173,53 @@
   }
 
   .dx-pill {
-    @apply rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary;
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary;
+  }
+
+  .dx-pill::before {
+    content: '✓';
+    @apply text-primary;
   }
 
   .soft-grid {
     background-image:
-      linear-gradient(hsl(0 0% 100% / 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 0% 100% / 0.035) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
     background-size: 72px 72px;
+  }
+
+  .brand-orbit {
+    @apply pointer-events-none absolute rounded-full border border-primary/20;
+  }
+
+  .brand-orbit--dashed {
+    @apply border-dashed border-primary/25;
+  }
+
+  .brand-lockup .brand-emblem {
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      filter 180ms ease;
+  }
+
+  .brand-lockup:hover .brand-emblem {
+    transform: translateY(-1px);
+    border-color: hsl(var(--primary) / 0.62);
+    filter: drop-shadow(0 0 22px hsl(var(--primary) / 0.18));
+  }
+
+  .app-chrome {
+    background:
+      radial-gradient(circle at 14% 9%, hsl(var(--primary) / 0.12), transparent 29rem),
+      radial-gradient(circle at 87% 16%, hsl(var(--primary) / 0.07), transparent 26rem),
+      linear-gradient(180deg, rgba(11, 11, 11, 0.98), rgba(5, 5, 5, 0.98));
+  }
+
+  .app-main-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.86) transparent;
   }
 }
 

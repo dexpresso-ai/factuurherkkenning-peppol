@@ -8,9 +8,9 @@ import {
   Building2,
   ClipboardList,
   Settings,
-  Sparkles,
   X,
 } from 'lucide-react';
+import { BrandMark } from '@/components/BrandMark';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -43,38 +43,28 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         aria-label="Menu sluiten"
         onClick={onClose}
         className={cn(
-          'fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity lg:hidden',
+          'fixed inset-0 z-40 bg-black/72 backdrop-blur-md transition-opacity lg:hidden',
           mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       />
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex h-full w-[min(86vw,18.5rem)] shrink-0 flex-col border-r border-white/10 bg-[#0b0b0b]/92 shadow-elevated backdrop-blur-2xl transition-transform duration-300 lg:relative lg:z-20 lg:w-72 lg:translate-x-0 lg:bg-black/25',
+          'fixed inset-y-0 left-0 z-50 flex h-full w-[min(88vw,19rem)] shrink-0 flex-col border-r border-white/10 bg-[#0b0b0b]/88 shadow-elevated backdrop-blur-2xl transition-transform duration-300 lg:relative lg:z-20 lg:w-72 lg:translate-x-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_18%_8%,hsl(var(--primary)/0.2),transparent_18rem)]" />
+        <div className="pointer-events-none absolute inset-0 soft-grid opacity-[0.28]" />
+        <div className="pointer-events-none absolute -left-28 top-12 h-72 w-72 rounded-full bg-primary/14 blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
         <div className="relative flex h-20 items-center gap-3 border-b border-white/10 px-5 lg:px-6">
-          <div className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[14px] border border-primary/35 bg-[#111] text-primary shadow-glow">
-            <span className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary)/0.22),transparent_62%)]" />
-            <span className="relative text-sm font-extrabold tracking-[-0.08em]">Dx</span>
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-[15px] font-extrabold leading-tight tracking-[-0.035em] text-foreground">
-              Peppol Access Agent
-            </div>
-            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-              <Sparkles className="h-3 w-3 text-primary" />
-              Factuurhub · Peppol Agent
-            </div>
-          </div>
+          <BrandMark />
           <button
             type="button"
             aria-label="Menu sluiten"
             onClick={onClose}
-            className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-muted-foreground transition hover:border-primary/35 hover:text-primary lg:hidden"
+            className="ml-auto flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-white/[0.045] text-muted-foreground shadow-card transition hover:-translate-y-0.5 hover:border-primary/45 hover:text-primary lg:hidden"
           >
             <X className="h-4 w-4" />
           </button>
@@ -93,23 +83,24 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                   onClick={onClose}
                   className={({ isActive }) =>
                     cn(
-                      'group relative flex items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all duration-300 motion-safe:hover:translate-x-1',
+                      'group relative flex items-center gap-3 overflow-hidden rounded-2xl border px-3.5 py-3 text-sm font-semibold transition-all duration-200 motion-safe:hover:translate-x-1',
                       isActive
-                        ? 'border border-primary/20 bg-primary/[0.12] text-foreground shadow-glow'
-                        : 'border border-transparent text-muted-foreground hover:border-white/10 hover:bg-white/[0.055] hover:text-foreground',
+                        ? 'border-primary/30 bg-primary/[0.12] text-foreground shadow-glow'
+                        : 'border-transparent text-muted-foreground hover:border-white/10 hover:bg-white/[0.055] hover:text-foreground',
                     )
                   }
                 >
                   {({ isActive }) => (
                     <>
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-primary shadow-[0_0_18px_hsl(var(--primary)/0.8)]" />
-                      )}
+                      <span className={cn(
+                        'absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary shadow-[0_0_18px_hsl(var(--primary)/0.8)] transition-opacity',
+                        isActive ? 'opacity-100' : 'opacity-0',
+                      )} />
                       <span
                         className={cn(
-                          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-300',
+                          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-200',
                           isActive
-                            ? 'border-primary/30 bg-primary/15 text-primary'
+                            ? 'border-primary/35 bg-primary/15 text-primary'
                             : 'border-white/10 bg-white/[0.035] text-muted-foreground group-hover:border-primary/25 group-hover:text-primary',
                         )}
                       >
@@ -125,13 +116,13 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         </nav>
 
         <div className="relative border-t border-white/10 p-4">
-          <div className="rounded-3xl border border-primary/20 bg-primary/10 p-4 shadow-card">
-            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+          <div className="brand-panel rounded-[24px] p-4">
+            <div className="relative z-10 flex items-center gap-2 text-xs font-bold text-primary">
               <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_18px_hsl(var(--primary)/0.7)]" />
-              Shot live
+              Live agent-flow
             </div>
-            <div className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Mailbox → herkennen → controleren → Peppol. Gebrouwen voor snelheid.
+            <div className="relative z-10 mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Mailbox → herkennen → controleren → Peppol. Eén rustige, gouden workflow.
             </div>
           </div>
         </div>

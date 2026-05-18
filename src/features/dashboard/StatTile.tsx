@@ -19,9 +19,9 @@ const toneStyles = {
     glow: 'from-white/10',
   },
   info: {
-    iconBg: 'bg-primary/10 text-primary border-primary/20',
+    iconBg: 'bg-primary/10 text-primary border-primary/25',
     accent: 'text-primary',
-    glow: 'from-primary/20',
+    glow: 'from-primary/22',
   },
   success: {
     iconBg: 'bg-success/10 text-success border-success/20',
@@ -51,23 +51,23 @@ export function StatTile({
   const styles = toneStyles[tone];
 
   const inner = (
-    <div className="group relative flex h-full min-h-[158px] flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-card/72 p-5 shadow-card backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow">
-      <div className={cn('pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-full bg-gradient-to-br to-transparent blur-2xl transition-opacity duration-300 group-hover:opacity-100', styles.glow)} />
-      <div className="relative flex items-start justify-between">
+    <div className="brand-panel group relative flex h-full min-h-[166px] flex-col justify-between overflow-hidden rounded-[26px] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-primary/32">
+      <div className={cn('pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-gradient-to-br to-transparent blur-2xl transition-opacity duration-300 group-hover:opacity-100', styles.glow)} />
+      <div className="relative z-10 flex items-start justify-between">
         <div className={cn('flex h-11 w-11 items-center justify-center rounded-2xl border shadow-inner', styles.iconBg)}>
           <Icon className="h-5 w-5" />
         </div>
         {to && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] text-muted-foreground transition-all group-hover:bg-primary/10 group-hover:text-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-muted-foreground transition-all group-hover:bg-primary/10 group-hover:text-primary">
             <ArrowUpRight className="h-4 w-4" />
           </div>
         )}
       </div>
-      <div className="relative mt-5">
-        <div className={cn('text-4xl font-semibold tabular-nums tracking-tight', styles.accent)}>
+      <div className="relative z-10 mt-5">
+        <div className={cn('text-4xl font-extrabold tabular-nums tracking-[-0.06em]', styles.accent)}>
           {value}
         </div>
-        <div className="mt-1.5 text-sm font-medium text-foreground/90">{label}</div>
+        <div className="mt-1.5 text-sm font-bold text-foreground/90">{label}</div>
         {hint && <div className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{hint}</div>}
       </div>
     </div>

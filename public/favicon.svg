@@ -1,4 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#0F6CBD"/>
-  <path d="M9 9h7.5a4.5 4.5 0 0 1 0 9H13v5h-4V9Zm4 3v3h3.5a1.5 1.5 0 0 0 0-3H13Z" fill="#fff"/>
+  <defs>
+    <radialGradient id="g" cx="32%" cy="22%" r="76%">
+      <stop offset="0" stop-color="#ffbd59"/>
+      <stop offset="0.42" stop-color="#171717"/>
+      <stop offset="1" stop-color="#050505"/>
+    </radialGradient>
+  </defs>
+  <rect width="32" height="32" rx="10" fill="url(#g)"/>
+  <rect x="5.5" y="5.5" width="21" height="21" rx="7" fill="none" stroke="#ffbd59" stroke-opacity=".52"/>
+  <path d="M10 9.5h7.25a4.75 4.75 0 0 1 0 9.5H14v3.5h-4v-13Zm4 3.25v3h3.1a1.5 1.5 0 0 0 0-3H14Z" fill="#ffbd59"/>
 </svg>
