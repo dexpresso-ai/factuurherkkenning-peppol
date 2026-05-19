@@ -16,17 +16,17 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn('flex flex-wrap items-start justify-between gap-4', className)}>
+    <div className={cn('flex flex-wrap items-end justify-between gap-3', className)}>
       <div className="min-w-0">
-        <div className="dx-eyebrow mb-2">
+        <div className="dx-eyebrow mb-1.5 text-[10px]">
           <Sparkles className="h-3 w-3" />
           Peppol Access Agent
         </div>
-        <h1 className="gradient-text truncate text-[clamp(2rem,4vw,3.9rem)] font-extrabold leading-[0.95] tracking-[-0.07em]">
+        <h1 className="gradient-text truncate text-[clamp(1.55rem,2.7vw,2.65rem)] font-extrabold leading-[0.98] tracking-[-0.07em]">
           {title}
         </h1>
         {description && (
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground lg:text-[15px]">
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
             {description}
           </p>
         )}

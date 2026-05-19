@@ -17,7 +17,7 @@ export function AppLayout() {
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <Topbar onOpenSidebar={() => setMobileMenuOpen(true)} />
         <main className="app-main-scroll flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-5 lg:px-10 lg:py-9">
+          <div className="mx-auto w-full max-w-[1480px] px-4 py-5 sm:px-5 lg:px-8 lg:py-7">
             <div className="page-enter">
               <Outlet />
             </div>
